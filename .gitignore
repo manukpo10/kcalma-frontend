@@ -23,3 +23,9 @@ dev-dist
 *.njsproj
 *.sln
 *.sw?
+
+# Local secrets (any .env variant)
+.env*
+
+# PWA dev build
+dev-dist/
