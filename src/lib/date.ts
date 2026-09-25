@@ -32,3 +32,21 @@ export function formatDayLabel(iso: string): string {
   const [year, month, day] = iso.split('-').map(Number)
   return WEEKDAY_FORMATTER.format(new Date(year, month - 1, day))
 }
+
+function toLocalDate(iso: string): Date {
+  const [year, month, day] = iso.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
+const SHORT_DATE_FORMATTER = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' })
+const LONG_DATE_FORMATTER = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })
+
+/** "25 sep" — compact axis/list label. */
+export function formatShortDate(iso: string): string {
+  return SHORT_DATE_FORMATTER.format(toLocalDate(iso))
+}
+
+/** "25 de septiembre de 2026" — full date for messages like the goal projection sentence. */
+export function formatLongDate(iso: string): string {
+  return LONG_DATE_FORMATTER.format(toLocalDate(iso))
+}

@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Activity,
   Cake,
+  Flag,
   Flame,
   Minus,
   Moon,
@@ -68,6 +69,7 @@ const STEPS: { field: keyof OnboardingFormValues; question: string; icon: Lucide
   { field: 'weightKg', question: 'Peso', icon: Scale },
   { field: 'activityLevel', question: 'Nivel de actividad', icon: Activity },
   { field: 'goal', question: 'Objetivo', icon: Target },
+  { field: 'goalWeightKg', question: 'Peso objetivo', icon: Flag },
 ]
 
 export function OnboardingPage() {
@@ -93,6 +95,7 @@ export function OnboardingPage() {
       weightKg: '',
       activityLevel: 'SEDENTARY',
       goal: 'MAINTAIN',
+      goalWeightKg: '',
     },
   })
 
@@ -105,6 +108,7 @@ export function OnboardingPage() {
         weightKg: String(existing.profile.weightKg),
         activityLevel: existing.profile.activityLevel,
         goal: existing.profile.goal,
+        goalWeightKg: existing.profile.goalWeightKg !== null ? String(existing.profile.goalWeightKg) : '',
       })
     }
   }, [existing, reset])
@@ -117,6 +121,7 @@ export function OnboardingPage() {
       weightKg: Number(values.weightKg),
       activityLevel: values.activityLevel,
       goal: values.goal,
+      goalWeightKg: values.goalWeightKg ? Number(values.goalWeightKg) : null,
     })
     navigate('/', { replace: true })
   }
@@ -244,6 +249,19 @@ export function OnboardingPage() {
               value={watch('goal')}
               onChange={(value) => setValue('goal', value, { shouldValidate: true })}
               aria-label="Objetivo"
+            />
+          )}
+
+          {current.field === 'goalWeightKg' && (
+            <Input
+              label="Peso objetivo"
+              type="text"
+              inputMode="decimal"
+              placeholder="Opcional"
+              hint="Podés dejarlo en blanco y definirlo más adelante desde Progreso."
+              trailing={<span className="text-sm font-medium text-ink-muted">kg</span>}
+              error={errors.goalWeightKg?.message}
+              {...register('goalWeightKg')}
             />
           )}
         </div>

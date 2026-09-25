@@ -25,6 +25,12 @@ export const onboardingSchema = z.object({
     'EXTRA_ACTIVE',
   ]),
   goal: z.enum(['LOSE', 'MAINTAIN', 'GAIN']),
+  // Optional — left blank means "no goal weight set yet", validated only when provided.
+  goalWeightKg: z
+    .string()
+    .refine((value) => !value || (Number(value) >= 30 && Number(value) <= 300), {
+      message: 'El peso objetivo debe estar entre 30 y 300 kg',
+    }),
 })
 
 export type OnboardingFormValues = z.infer<typeof onboardingSchema>

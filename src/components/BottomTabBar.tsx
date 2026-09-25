@@ -1,4 +1,4 @@
-import { CalendarDays, Plus, UserRound } from 'lucide-react'
+import { CalendarDays, LineChart, Plus, UserRound } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { NavLink } from 'react-router'
 import { cn } from '../lib/cn'
@@ -29,7 +29,9 @@ function TabLink({ to, label, icon: Icon, end }: TabLinkProps) {
 }
 
 /**
- * Fixed bottom navigation: "Hoy" / a prominent center "+" (add flow) / "Perfil".
+ * Fixed bottom navigation: "Hoy" + "Progreso" grouped left of a prominent center "+" (add
+ * flow), "Perfil" alone on the right — tracking screens together, account screen separate,
+ * kept balanced around the center action.
  * Pages rendered inside {@link AppShell} must reserve bottom padding (see
  * `TAB_BAR_CLEARANCE_CLASS`) so content never sits underneath this fixed bar.
  */
@@ -41,6 +43,7 @@ export function BottomTabBar() {
     >
       <div className="mx-auto flex w-full max-w-md items-center justify-around px-2 pt-1">
         <TabLink to="/" label="Hoy" icon={CalendarDays} end />
+        <TabLink to="/progreso" label="Progreso" icon={LineChart} />
 
         <NavLink
           to="/agregar"

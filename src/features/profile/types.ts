@@ -17,6 +17,7 @@ export interface ProfileResponse {
   weightKg: number
   activityLevel: ActivityLevel
   goal: Goal
+  goalWeightKg: number | null
   createdAt: string
   updatedAt: string
 }
@@ -45,4 +46,5 @@ export interface ProfileRequest {
   weightKg: number
   activityLevel: ActivityLevel
   goal: Goal
+  goalWeightKg: number | null
 }

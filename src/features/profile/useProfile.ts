@@ -26,6 +26,8 @@ export function useUpdateProfile() {
       }),
     onSuccess: (data) => {
       queryClient.setQueryData(PROFILE_QUERY_KEY, data)
+      // goalWeightKg lives on the profile but is read by the Progreso summary card — keep it in sync.
+      void queryClient.invalidateQueries({ queryKey: ['progress'] })
     },
   })
 }
