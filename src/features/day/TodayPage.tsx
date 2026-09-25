@@ -1,4 +1,4 @@
-import { Candy, ChevronLeft, ChevronRight, Drumstick, Droplet, Gauge, Leaf, Wheat } from 'lucide-react'
+import { Candy, ChevronLeft, ChevronRight, Drumstick, Droplet, Gauge, Leaf, Pencil, Wheat } from 'lucide-react'
 import { useState } from 'react'
 import { Banner } from '../../components/ui/Banner'
 import { BrandMark } from '../../components/ui/BrandMark'
@@ -163,6 +163,12 @@ export function TodayPage() {
           </div>
 
           <div className="space-y-5">
+            {!allMealsEmpty && (
+              <p className="flex items-center gap-1.5 text-xs text-ink-muted">
+                <Pencil className="size-3.5" aria-hidden="true" />
+                Tocar una comida para editarla o eliminarla
+              </p>
+            )}
             {MEAL_TYPE_ORDER.map((mealType) => {
               const entries = data.meals[mealType] ?? []
               if (entries.length === 0) return null
@@ -175,7 +181,8 @@ export function TodayPage() {
                         key={entry.id}
                         type="button"
                         onClick={() => setEditingEntry(entry)}
-                        className="flex w-full items-center justify-between rounded-xl bg-surface p-3.5 text-left shadow-xs transition-colors hover:bg-surface-2"
+                        aria-label={`Editar ${entry.name}`}
+                        className="flex w-full items-center justify-between rounded-xl bg-surface p-3.5 text-left shadow-xs transition-colors hover:bg-surface-2 active:bg-surface-2"
                       >
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-medium text-ink capitalize">{entry.name}</span>
@@ -184,6 +191,7 @@ export function TodayPage() {
                         <span className="ml-3 shrink-0 font-semibold text-ink">
                           {formatNumber(entry.totals.kcal)} kcal
                         </span>
+                        <Pencil className="ml-3 size-4 shrink-0 text-ink-muted" aria-hidden="true" />
                       </button>
                     ))}
                   </div>
