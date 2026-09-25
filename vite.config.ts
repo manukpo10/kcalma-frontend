@@ -9,7 +9,12 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
+      // We register the service worker ourselves from src/components/UpdatePrompt.tsx
+      // (virtual:pwa-register/react) so we control exactly when updates apply — see
+      // that file for why (iOS backgrounds the PWA instead of relaunching it, and a
+      // silent auto-reload could lose an in-progress add-meal flow).
+      injectRegister: false,
       includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png'],
       manifest: {
         name: 'Kcalma',
