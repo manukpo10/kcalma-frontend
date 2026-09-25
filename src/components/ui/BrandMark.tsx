@@ -1,4 +1,5 @@
-import { Leaf } from 'lucide-react'
+import markPng from '../../assets/brand/mark.png'
+import markWebp from '../../assets/brand/mark.webp'
 import { cn } from '../../lib/cn'
 
 interface BrandMarkProps {
@@ -7,28 +8,21 @@ interface BrandMarkProps {
 }
 
 const SIZE_CLASSES = {
-  sm: 'size-9 rounded-lg',
-  md: 'size-14 rounded-xl',
-  lg: 'size-20 rounded-2xl',
+  sm: 'h-9',
+  md: 'h-14',
+  lg: 'h-20',
 }
 
-const ICON_SIZE_CLASSES = {
-  sm: 'size-5',
-  md: 'size-7',
-  lg: 'size-10',
-}
-
-/** Kcalma's brand glyph — a leaf on a primary gradient, reused across auth/loading. */
+/** Kcalma's "K" mark (cropped from the real logo), used in the header and loading state. */
 export function BrandMark({ size = 'md', className }: BrandMarkProps) {
   return (
-    <div
-      className={cn(
-        'flex shrink-0 items-center justify-center bg-gradient-to-br from-primary-400 to-primary-700 shadow-sm',
-        SIZE_CLASSES[size],
-        className,
-      )}
-    >
-      <Leaf className={cn('text-white', ICON_SIZE_CLASSES[size])} aria-hidden="true" strokeWidth={2.25} />
-    </div>
+    <picture>
+      <source srcSet={markWebp} type="image/webp" />
+      <img
+        src={markPng}
+        alt="Kcalma"
+        className={cn('w-auto shrink-0', SIZE_CLASSES[size], className)}
+      />
+    </picture>
   )
 }

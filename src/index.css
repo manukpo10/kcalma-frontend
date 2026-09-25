@@ -6,14 +6,19 @@
 /* -----------------------------------------------------------------------
  * Kcalma design tokens
  * ---------------------------------------------------------------------
- * Palette rationale: a fresh green with a gentle teal undertone as the
- * primary — it reads as "health" without the clinical chill of pure cyan,
- * and stays close to the existing app-icon green for brand continuity.
- * Paired with warm (slightly yellow-leaning) neutrals instead of cool
- * grays so the UI feels calm and approachable rather than sterile — on
- * brand for "kcal + calma": tracking without diet anxiety.
- * Protein / carbs / fat each get one fixed hue used everywhere (rings,
- * tiles, future charts) so users build quick color-shape associations.
+ * Palette rationale: sampled straight from the real Kcalma logo (the "K"
+ * mark blends a deep teal into a lime-green swoosh, with a leaf on top).
+ * Lime (#84CE3B) is the primary accent — buttons, rings, selected states —
+ * with a near-black teal as its text/foreground so filled buttons read as
+ * a little piece of the logo itself. Deep teal gets its own ramp for
+ * secondary accents and tinted surfaces (onboarding step badges, info
+ * banners, the home hero card). Paired with warm (slightly yellow-leaning)
+ * neutrals instead of cool grays so the UI feels calm and approachable
+ * rather than sterile — on brand for "kcal + calma": tracking without
+ * diet anxiety. Protein / carbs / fat each get one fixed hue, deliberately
+ * outside the teal/lime family so they never get confused with brand
+ * chrome, used everywhere (rings, tiles, future charts) so users build
+ * quick color-shape associations.
  *
  * Theming: ships dark-only for now (product decision — see semantic
  * tokens below), but colors are kept in a light->dark 50-950 ramp and
@@ -24,20 +29,34 @@
 @theme {
   --font-sans: 'Plus Jakarta Sans Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
 
-  /* Primary — fresh green/teal */
-  --color-primary-50: #eefbf4;
-  --color-primary-100: #d3f3e1;
-  --color-primary-200: #a7e6c4;
-  --color-primary-300: #74d2a2;
-  --color-primary-400: #45b87f;
-  --color-primary-500: #1f9c63;
-  --color-primary-600: #12793f;
-  --color-primary-700: #0d5e32;
-  --color-primary-800: #0b4a29;
-  --color-primary-900: #093c22;
-  --color-primary-950: #052314;
-  --color-primary: var(--color-primary-600);
-  --color-primary-fg: #ffffff;
+  /* Primary — logo lime, the main accent for buttons/rings/highlights */
+  --color-primary-50: #f4fbea;
+  --color-primary-100: #e6f5ce;
+  --color-primary-200: #ceeb9e;
+  --color-primary-300: #b3de6e;
+  --color-primary-400: #9ad34e;
+  --color-primary-500: #84ce3b;
+  --color-primary-600: #6fb52e;
+  --color-primary-700: #5c9926;
+  --color-primary-800: #4a7c1f;
+  --color-primary-900: #3a6118;
+  --color-primary-950: #24400e;
+  --color-primary: var(--color-primary-500);
+  --color-primary-fg: var(--color-teal-900);
+
+  /* Teal — logo's deep teal, for secondary accents and tinted surfaces */
+  --color-teal-50: #eaf6f6;
+  --color-teal-100: #cceaea;
+  --color-teal-200: #96d2d3;
+  --color-teal-300: #62bcbc;
+  --color-teal-400: #35a0a0;
+  --color-teal-500: #1c8285;
+  --color-teal-600: #0f686b;
+  --color-teal-700: #035355;
+  --color-teal-800: #024e53;
+  --color-teal-900: #014041;
+  --color-teal-950: #002325;
+  --color-teal: var(--color-teal-800);
 
   /* Warm neutrals */
   --color-neutral-50: #fafaf8;
@@ -59,10 +78,10 @@
   --color-fat: #6c7bdb;
 
   /* Semantic status — tuned for AA text contrast on dark surfaces */
-  --color-success: var(--color-primary-400);
+  --color-success: #2fae66; /* lightened leaf-green, echoes the logo's leaf */
   --color-warning: #c97a12;
   --color-danger: #f16a72;
-  --color-info: #4c94e0;
+  --color-info: var(--color-teal-400);
 
   /* Radii */
   --radius-sm: 0.625rem;
@@ -112,6 +131,7 @@
   --color-hairline: var(--hairline);
 
   --color-primary-tint: color-mix(in oklab, var(--color-primary-500) 20%, var(--surface));
+  --color-teal-tint: color-mix(in oklab, var(--color-teal-500) 22%, var(--surface));
   --color-protein-tint: color-mix(in oklab, var(--color-protein) 18%, var(--surface));
   --color-carbs-tint: color-mix(in oklab, var(--color-carbs) 18%, var(--surface));
   --color-fat-tint: color-mix(in oklab, var(--color-fat) 18%, var(--surface));

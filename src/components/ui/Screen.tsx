@@ -5,6 +5,8 @@ import { cn } from '../../lib/cn'
 interface ScreenProps {
   children: ReactNode
   title?: string
+  /** Small brand mark or icon rendered before the title, e.g. <BrandMark size="sm" />. */
+  icon?: ReactNode
   onBack?: () => void
   actions?: ReactNode
   className?: string
@@ -15,8 +17,8 @@ interface ScreenProps {
  * App shell: safe-area aware header + scrollable content, capped to a
  * comfortable phone-width column. Reused by every screen.
  */
-export function Screen({ children, title, onBack, actions, className, contentClassName }: ScreenProps) {
-  const hasHeader = Boolean(title || onBack || actions)
+export function Screen({ children, title, icon, onBack, actions, className, contentClassName }: ScreenProps) {
+  const hasHeader = Boolean(title || icon || onBack || actions)
 
   return (
     <div className={cn('min-h-dvh bg-bg', className)}>
@@ -33,6 +35,7 @@ export function Screen({ children, title, onBack, actions, className, contentCla
                 <ChevronLeft className="size-6" aria-hidden="true" />
               </button>
             )}
+            {icon}
             {title && <h1 className="flex-1 truncate text-lg font-bold text-ink">{title}</h1>}
             {actions && <div className="flex items-center gap-1">{actions}</div>}
           </header>

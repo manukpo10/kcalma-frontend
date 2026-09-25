@@ -36,7 +36,7 @@ export default defineConfig({
       workbox: {
         // Precache build assets only. No runtimeCaching entries: API and Supabase
         // calls are cross-origin and must always hit the network, never the cache.
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,webp,svg,webmanifest}'],
       },
     }),
   ],

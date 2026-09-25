@@ -169,7 +169,7 @@ export function OnboardingPage() {
       >
         <div key={step} className="animate-step-in">
           <div className="mb-7 flex flex-col items-center text-center">
-            <span className="mb-3 flex size-14 items-center justify-center rounded-full bg-primary-tint text-primary-300">
+            <span className="mb-3 flex size-14 items-center justify-center rounded-full bg-teal-tint text-teal-300">
               <StepIcon className="size-7" aria-hidden="true" strokeWidth={2} />
             </span>
             <h2 className="text-xl font-bold text-ink">{current.question}</h2>

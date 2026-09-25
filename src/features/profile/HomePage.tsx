@@ -1,6 +1,7 @@
 import { Candy, Droplet, Droplets, Drumstick, Gauge, Leaf, LogOut, Pencil, Wheat } from 'lucide-react'
 import { Link } from 'react-router'
 import { Banner } from '../../components/ui/Banner'
+import { BrandMark } from '../../components/ui/BrandMark'
 import { ProgressRing } from '../../components/ui/ProgressRing'
 import { Screen } from '../../components/ui/Screen'
 import { StatTile } from '../../components/ui/StatTile'
@@ -36,6 +37,7 @@ export function HomePage() {
   return (
     <Screen
       title="Kcalma"
+      icon={<BrandMark size="sm" className="mr-1" />}
       actions={
         <>
           <Link
@@ -60,15 +62,22 @@ export function HomePage() {
         {SEX_LABELS[profile.sex]} · {ACTIVITY_LABELS[profile.activityLevel].title}
       </p>
 
-      <div className="mb-6 rounded-2xl bg-gradient-to-br from-primary-600 to-primary-800 p-6 shadow-md">
-        <p className="mb-4 text-center text-xs font-semibold tracking-wide text-primary-100 uppercase">
+      <div className="mb-6 rounded-2xl bg-gradient-to-br from-teal-700 to-teal-950 p-6 shadow-md">
+        <p className="mb-4 text-center text-xs font-semibold tracking-wide text-teal-200 uppercase">
           Objetivo diario
         </p>
         <div className="flex justify-center">
-          <ProgressRing value={CONSUMED} max={targets.calories} size={188} aria-label="Calorías consumidas">
+          <ProgressRing
+            value={CONSUMED}
+            max={targets.calories}
+            size={188}
+            color="var(--color-primary)"
+            trackColor="rgb(255 255 255 / 0.14)"
+            aria-label="Calorías consumidas"
+          >
             <div className="text-center">
               <p className="text-4xl font-bold text-white">{formatNumber(CONSUMED)}</p>
-              <p className="text-sm text-primary-100">/ {formatNumber(targets.calories)} kcal</p>
+              <p className="text-sm text-teal-200">/ {formatNumber(targets.calories)} kcal</p>
             </div>
           </ProgressRing>
         </div>
@@ -117,24 +126,32 @@ export function HomePage() {
           label="Fibra"
           value={formatNumber(targets.fiberGrams)}
           sublabel="g"
+          color="var(--color-success)"
+          tint="var(--color-success-tint)"
         />
         <StatTile
           icon={<Candy className="size-4" aria-hidden="true" />}
           label="Azúcar libre (máx.)"
           value={formatNumber(targets.sugarMaxGrams)}
           sublabel="g"
+          color="var(--color-warning)"
+          tint="var(--color-warning-tint)"
         />
         <StatTile
           icon={<Gauge className="size-4" aria-hidden="true" />}
           label="Sodio (máx.)"
           value={formatNumber(targets.sodiumMaxMg)}
           sublabel="mg"
+          color="var(--color-warning)"
+          tint="var(--color-warning-tint)"
         />
         <StatTile
           icon={<Droplets className="size-4" aria-hidden="true" />}
           label="Agua"
           value={formatNumber(targets.waterMl)}
           sublabel="ml"
+          color="var(--color-teal-400)"
+          tint="var(--color-teal-tint)"
         />
       </div>
     </Screen>

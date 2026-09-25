@@ -3,8 +3,9 @@ import { Eye, EyeOff, Lock, Mail } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Navigate, useNavigate } from 'react-router'
+import logoFullPng from '../../assets/brand/logo-full.png'
+import logoFullWebp from '../../assets/brand/logo-full.webp'
 import { Banner } from '../../components/ui/Banner'
-import { BrandMark } from '../../components/ui/BrandMark'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { supabase } from '../../lib/supabase'
@@ -56,8 +57,11 @@ export function LoginPage() {
     <div className="flex min-h-dvh flex-col justify-center px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       <div className="mx-auto w-full max-w-sm">
         <div className="mb-9 flex flex-col items-center text-center">
-          <BrandMark size="lg" className="mb-4" />
-          <h1 className="text-2xl font-bold text-ink">Kcalma</h1>
+          <h1 className="sr-only">Kcalma</h1>
+          <picture>
+            <source srcSet={logoFullWebp} type="image/webp" />
+            <img src={logoFullPng} alt="Kcalma" className="h-44 w-auto" />
+          </picture>
           <p className="mt-1.5 text-sm text-ink-muted">Seguimiento de calorías simple y tranquilo.</p>
         </div>
 
