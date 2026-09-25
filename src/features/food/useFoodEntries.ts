@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '../../lib/api'
-import type { FoodAnalysisResponse, FoodEntry, FoodEntryRequest, UpdateFoodEntryRequest } from './types'
+import type { FoodAnalysisResponse, FoodEntry, FoodEntryRequest, MealType, UpdateFoodEntryRequest } from './types'
 
 /** POST /api/food/analyze — detects items from a plate photo, not saved yet. */
 export function useAnalyzePhoto() {
@@ -57,6 +57,18 @@ export function useDeleteFoodEntry() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => apiFetch<void>(`/api/food/entries/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['day'] })
+    },
+  })
+}
+
+/** DELETE /api/food/entries?date&mealType — wipes every entry of one meal/day in one request. */
+export function useDeleteMeal() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ date, mealType }: { date: string; mealType: MealType }) =>
+      apiFetch<void>(`/api/food/entries?date=${date}&mealType=${mealType}`, { method: 'DELETE' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['day'] })
     },

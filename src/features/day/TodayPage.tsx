@@ -1,4 +1,4 @@
-import { Candy, ChevronLeft, ChevronRight, Drumstick, Droplet, Gauge, Leaf, Pencil, Wheat } from 'lucide-react'
+import { Candy, ChevronLeft, ChevronRight, Drumstick, Droplet, Gauge, Leaf, Pencil, Trash2, Wheat } from 'lucide-react'
 import { useState } from 'react'
 import { Banner } from '../../components/ui/Banner'
 import { BrandMark } from '../../components/ui/BrandMark'
@@ -10,14 +10,21 @@ import { TAB_BAR_CLEARANCE_CLASS } from '../../components/BottomTabBar'
 import { addDays, formatDayLabel, todayIso } from '../../lib/date'
 import { formatNumber } from '../../lib/format'
 import { MEAL_TYPE_LABELS, MEAL_TYPE_ORDER } from '../food/labels'
-import type { FoodEntry } from '../food/types'
+import type { FoodEntry, MealType } from '../food/types'
+import { DeleteMealModal } from './DeleteMealModal'
 import { EditEntryModal } from './EditEntryModal'
 import { useDay } from './useDay'
+
+interface DeletingMeal {
+  mealType: MealType
+  entries: FoodEntry[]
+}
 
 export function TodayPage() {
   const [date, setDate] = useState(todayIso)
   const { data, isPending, error } = useDay(date)
   const [editingEntry, setEditingEntry] = useState<FoodEntry | null>(null)
+  const [deletingMeal, setDeletingMeal] = useState<DeletingMeal | null>(null)
 
   const isToday = date === todayIso()
   const allMealsEmpty = data ? MEAL_TYPE_ORDER.every((mealType) => (data.meals[mealType] ?? []).length === 0) : false
@@ -174,7 +181,17 @@ export function TodayPage() {
               if (entries.length === 0) return null
               return (
                 <div key={mealType}>
-                  <p className="mb-2 text-sm font-semibold text-ink-muted">{MEAL_TYPE_LABELS[mealType]}</p>
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-sm font-semibold text-ink-muted">{MEAL_TYPE_LABELS[mealType]}</p>
+                    <button
+                      type="button"
+                      onClick={() => setDeletingMeal({ mealType, entries })}
+                      aria-label={`Eliminar ${MEAL_TYPE_LABELS[mealType]}`}
+                      className="flex size-11 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-2 hover:text-danger active:bg-surface-2 active:text-danger"
+                    >
+                      <Trash2 className="size-4" aria-hidden="true" />
+                    </button>
+                  </div>
                   <div className="space-y-2">
                     {entries.map((entry) => (
                       <button
@@ -213,6 +230,14 @@ export function TodayPage() {
       )}
 
       {editingEntry && <EditEntryModal entry={editingEntry} onClose={() => setEditingEntry(null)} />}
+      {deletingMeal && (
+        <DeleteMealModal
+          date={date}
+          mealType={deletingMeal.mealType}
+          entries={deletingMeal.entries}
+          onClose={() => setDeletingMeal(null)}
+        />
+      )}
     </Screen>
   )
 }
