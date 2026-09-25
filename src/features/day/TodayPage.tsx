@@ -1,5 +1,6 @@
-import { Candy, ChevronLeft, ChevronRight, Drumstick, Droplet, Gauge, Leaf, Pencil, Trash2, Wheat } from 'lucide-react'
+import { Candy, ChevronLeft, ChevronRight, Drumstick, Droplet, Gauge, Leaf, Pencil, Sparkles, Trash2, Wheat } from 'lucide-react'
 import { useState } from 'react'
+import { useNavigate } from 'react-router'
 import { Banner } from '../../components/ui/Banner'
 import { BrandMark } from '../../components/ui/BrandMark'
 import { ProgressRing } from '../../components/ui/ProgressRing'
@@ -21,6 +22,7 @@ interface DeletingMeal {
 }
 
 export function TodayPage() {
+  const navigate = useNavigate()
   const [date, setDate] = useState(todayIso)
   const { data, isPending, error } = useDay(date)
   const [editingEntry, setEditingEntry] = useState<FoodEntry | null>(null)
@@ -91,6 +93,18 @@ export function TodayPage() {
             <p className="mt-4 text-center text-sm text-teal-200">
               {formatNumber(data.consumed.kcal)} / {formatNumber(data.targets.calories)} kcal
             </p>
+            {isToday && (
+              <div className="mt-4 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => navigate('/sugerencias')}
+                  className="inline-flex h-11 items-center gap-1.5 rounded-full bg-white/10 px-4 text-sm font-semibold text-white backdrop-blur-sm transition-colors active:scale-[0.98] hover:bg-white/15 active:bg-white/20"
+                >
+                  <Sparkles className="size-4 text-primary-400" aria-hidden="true" />
+                  ¿Qué como?
+                </button>
+              </div>
+            )}
           </div>
 
           {data.exceeded.kcal && (

@@ -8,6 +8,7 @@ import { AddMealPage } from './features/food/AddMealPage'
 import { OnboardingPage } from './features/profile/OnboardingPage'
 import { ProfilePage } from './features/profile/ProfilePage'
 import { RequireProfile } from './features/profile/RequireProfile'
+import { SuggestMealsPage } from './features/suggestions/SuggestMealsPage'
 
 export default function App() {
   return (
@@ -30,6 +31,16 @@ export default function App() {
             <RequireAuth>
               <RequireProfile>
                 <AddMealPage />
+              </RequireProfile>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/sugerencias"
+          element={
+            <RequireAuth>
+              <RequireProfile>
+                <SuggestMealsPage />
               </RequireProfile>
             </RequireAuth>
           }

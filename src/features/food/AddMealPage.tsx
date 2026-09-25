@@ -1,6 +1,6 @@
 import { Camera, ImagePlus, LoaderCircle, PenLine } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { useNavigate } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 import { Banner } from '../../components/ui/Banner'
 import { Button } from '../../components/ui/Button'
 import { Screen } from '../../components/ui/Screen'
@@ -26,6 +26,13 @@ const STEP_TITLES: Record<Step, string> = {
   describe: 'Describir comida',
 }
 
+/** Router state carried from "¿Qué como?" (see SuggestMealsPage) so its "Registrar" CTA can drop
+ *  the user straight into the review step below, prefilled with that option's items. */
+interface SuggestionPrefill {
+  items: DraftItem[]
+  mealType: MealType
+}
+
 function analyzedToDraft(item: {
   name: string
   grams: number
@@ -42,13 +49,16 @@ function analyzedToDraft(item: {
 
 export function AddMealPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const entryDate = todayIso()
   const { data: day } = useDay(entryDate)
 
-  const [step, setStep] = useState<Step>('choose')
+  const prefill = (location.state as { prefill?: SuggestionPrefill } | null)?.prefill ?? null
+
+  const [step, setStep] = useState<Step>(prefill ? 'review' : 'choose')
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [items, setItems] = useState<DraftItem[]>([])
-  const [mealType, setMealType] = useState<MealType>(() => mealTypeForNow())
+  const [items, setItems] = useState<DraftItem[]>(prefill?.items ?? [])
+  const [mealType, setMealType] = useState<MealType>(() => prefill?.mealType ?? mealTypeForNow())
   const [note, setNote] = useState<string | null>(null)
   const [analyzeError, setAnalyzeError] = useState<string | null>(null)
   const [analyzeKind, setAnalyzeKind] = useState<'photo' | 'text'>('photo')
