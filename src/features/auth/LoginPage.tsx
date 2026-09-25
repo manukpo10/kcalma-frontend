@@ -62,7 +62,7 @@ export function LoginPage() {
             <source srcSet={logoFullWebp} type="image/webp" />
             <img src={logoFullPng} alt="Kcalma" className="h-44 w-auto" />
           </picture>
-          <p className="mt-1.5 text-sm text-ink-muted">Seguimiento de calorías simple y tranquilo.</p>
+          <p className="mt-1.5 text-sm text-ink-muted">Come bien, llega a tu meta</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
