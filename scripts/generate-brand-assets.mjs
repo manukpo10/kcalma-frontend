@@ -1,6 +1,7 @@
 // Regenerates every brand-derived asset (Login hero logo, header mark, PWA
-// icons, apple-touch-icon, favicon) from the real logo at imagenes/logo.png
-// (repo root, left untouched — never write to it).
+// icons, apple-touch-icon, favicon) from the real logo at brand/logo.png
+// (kept inside this package so the frontend repo is self-contained once it
+// is split out — left untouched, never write to it).
 //
 // The source PNG has a soft glow/fringe around its shapes (alpha values up
 // to roughly 70% just outside the crisp edges). ALPHA_THRESHOLD removes it:
@@ -20,7 +21,7 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
-const SRC = path.resolve(ROOT, '..', 'imagenes', 'logo.png')
+const SRC = path.resolve(ROOT, 'brand', 'logo.png')
 const PUBLIC_DIR = path.join(ROOT, 'public')
 const BRAND_DIR = path.join(ROOT, 'src', 'assets', 'brand')
 
