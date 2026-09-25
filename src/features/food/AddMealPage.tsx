@@ -1,4 +1,4 @@
-import { Camera, ImagePlus, LoaderCircle } from 'lucide-react'
+import { Camera, ImagePlus, LoaderCircle, PenLine } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Banner } from '../../components/ui/Banner'
@@ -8,20 +8,22 @@ import { Skeleton } from '../../components/ui/Skeleton'
 import { todayIso } from '../../lib/date'
 import { useDay } from '../day/useDay'
 import { compressImage } from './compressImage'
+import { DescribeMealStep } from './DescribeMealStep'
 import { mealTypeForNow } from './labels'
 import { ManualAddStep } from './ManualAddStep'
 import { computeTotals, sumTotals } from './nutritionMath'
 import { ReviewStep, type DayPreview } from './ReviewStep'
 import type { DraftItem, FoodEntryRequest, MealType } from './types'
-import { useAnalyzePhoto, useSaveFoodEntries } from './useFoodEntries'
+import { useAnalyzeDescription, useAnalyzePhoto, useSaveFoodEntries } from './useFoodEntries'
 
-type Step = 'choose' | 'analyzing' | 'review' | 'manual'
+type Step = 'choose' | 'analyzing' | 'review' | 'manual' | 'describe'
 
 const STEP_TITLES: Record<Step, string> = {
   choose: 'Agregar comida',
   analyzing: 'Analizando',
   review: 'Revisar comida',
   manual: 'Agregar manualmente',
+  describe: 'Describir comida',
 }
 
 function analyzedToDraft(item: {
@@ -49,16 +51,20 @@ export function AddMealPage() {
   const [mealType, setMealType] = useState<MealType>(() => mealTypeForNow())
   const [note, setNote] = useState<string | null>(null)
   const [analyzeError, setAnalyzeError] = useState<string | null>(null)
+  const [analyzeKind, setAnalyzeKind] = useState<'photo' | 'text'>('photo')
+  const [description, setDescription] = useState('')
 
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
 
   const analyzePhoto = useAnalyzePhoto()
+  const analyzeDescription = useAnalyzeDescription()
   const saveEntries = useSaveFoodEntries()
 
   const resetToChoose = () => {
     setStep('choose')
     setAnalyzeError(null)
+    setDescription('')
     if (previewUrl) URL.revokeObjectURL(previewUrl)
     setPreviewUrl(null)
   }
@@ -69,6 +75,7 @@ export function AddMealPage() {
     if (!file) return
 
     setAnalyzeError(null)
+    setAnalyzeKind('photo')
     setStep('analyzing')
     try {
       const compressed = await compressImage(file)
@@ -81,6 +88,26 @@ export function AddMealPage() {
     } catch (error) {
       setAnalyzeError(error instanceof Error ? error.message : 'No se pudo analizar la foto.')
       setStep('choose')
+    }
+  }
+
+  const handleAnalyzeDescription = async () => {
+    const trimmed = description.trim()
+    if (!trimmed) return
+
+    setAnalyzeError(null)
+    setAnalyzeKind('text')
+    setStep('analyzing')
+    try {
+      const result = await analyzeDescription.mutateAsync(trimmed)
+      setItems(result.items.map(analyzedToDraft))
+      setNote(result.note)
+      setMealType(mealTypeForNow())
+      setDescription('')
+      setStep('review')
+    } catch (error) {
+      setAnalyzeError(error instanceof Error ? error.message : 'No se pudo analizar la descripción.')
+      setStep('describe')
     }
   }
 
@@ -156,6 +183,14 @@ export function AddMealPage() {
           >
             Elegir de la galería
           </Button>
+          <Button
+            size="lg"
+            variant="secondary"
+            icon={<PenLine className="size-5" aria-hidden="true" />}
+            onClick={() => setStep('describe')}
+          >
+            Describir lo que comí
+          </Button>
           <button
             type="button"
             onClick={() => setStep('manual')}
@@ -178,7 +213,7 @@ export function AddMealPage() {
 
       {step === 'analyzing' && (
         <div className="space-y-5">
-          {previewUrl && (
+          {analyzeKind === 'photo' && previewUrl && (
             <div className="relative overflow-hidden rounded-2xl">
               <img src={previewUrl} alt="" className="h-48 w-full object-cover opacity-50" />
               <div className="absolute inset-0 flex items-center justify-center">
@@ -186,8 +221,13 @@ export function AddMealPage() {
               </div>
             </div>
           )}
+          {analyzeKind === 'text' && (
+            <div className="flex items-center justify-center rounded-2xl bg-surface-2 py-10">
+              <LoaderCircle className="size-10 animate-spin text-primary-300" aria-hidden="true" />
+            </div>
+          )}
           <p className="text-center font-medium text-ink" role="status" aria-live="polite">
-            Analizando tu plato...
+            {analyzeKind === 'text' ? 'Analizando tu descripción…' : 'Analizando tu plato...'}
           </p>
           <div className="space-y-3">
             <Skeleton className="h-20 w-full" />
@@ -195,6 +235,15 @@ export function AddMealPage() {
             <Skeleton className="h-20 w-full" />
           </div>
         </div>
+      )}
+
+      {step === 'describe' && (
+        <DescribeMealStep
+          value={description}
+          onChange={setDescription}
+          onAnalyze={() => void handleAnalyzeDescription()}
+          error={analyzeError}
+        />
       )}
 
       {step === 'review' && (

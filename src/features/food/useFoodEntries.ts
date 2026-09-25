@@ -13,6 +13,17 @@ export function useAnalyzePhoto() {
   })
 }
 
+/** POST /api/food/analyze-text — detects items from a free-text description, not saved yet. */
+export function useAnalyzeDescription() {
+  return useMutation({
+    mutationFn: (description: string) =>
+      apiFetch<FoodAnalysisResponse>('/api/food/analyze-text', {
+        method: 'POST',
+        body: JSON.stringify({ description }),
+      }),
+  })
+}
+
 /** POST /api/food/entries — batch-saves confirmed items (from a photo or manual add). */
 export function useSaveFoodEntries() {
   const queryClient = useQueryClient()
