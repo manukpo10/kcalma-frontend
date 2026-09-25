@@ -1,7 +1,18 @@
+import { Candy, Droplet, Droplets, Drumstick, Gauge, Leaf, LogOut, Pencil, Wheat } from 'lucide-react'
 import { Link } from 'react-router'
-import { supabase } from '../../lib/supabase'
+import { Banner } from '../../components/ui/Banner'
+import { ProgressRing } from '../../components/ui/ProgressRing'
+import { Screen } from '../../components/ui/Screen'
+import { StatTile } from '../../components/ui/StatTile'
 import { LoadingScreen } from '../../components/LoadingScreen'
+import { formatNumber } from '../../lib/format'
+import { supabase } from '../../lib/supabase'
+import { ACTIVITY_LABELS, SEX_LABELS } from './labels'
 import { useProfile } from './useProfile'
+
+// Food log doesn't exist yet — consumed is always 0 for now, but the ring and
+// tiles are already shaped as "consumed / target" so they're ready to wire up.
+const CONSUMED = 0
 
 export function HomePage() {
   const { data, isPending, error } = useProfile()
@@ -12,78 +23,120 @@ export function HomePage() {
 
   if (error || !data) {
     return (
-      <div className="flex min-h-dvh items-center justify-center px-6 text-center text-red-600">
-        <p>{error instanceof Error ? error.message : 'Something went wrong loading your profile.'}</p>
-      </div>
+      <Screen contentClassName="flex items-center justify-center">
+        <Banner tone="danger">
+          {error instanceof Error ? error.message : 'Error al cargar el perfil.'}
+        </Banner>
+      </Screen>
     )
   }
 
-  const { targets } = data
+  const { profile, targets } = data
 
   return (
-    <div className="min-h-dvh bg-gray-50 px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-      <div className="mx-auto w-full max-w-sm py-8">
-        <header className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-green-700">Kcalma</h1>
+    <Screen
+      title="Kcalma"
+      actions={
+        <>
+          <Link
+            to="/onboarding"
+            aria-label="Editar perfil"
+            className="flex size-11 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink"
+          >
+            <Pencil className="size-5" aria-hidden="true" />
+          </Link>
           <button
             type="button"
             onClick={() => supabase.auth.signOut()}
-            className="text-sm font-medium text-gray-500 hover:text-gray-700"
+            aria-label="Cerrar sesión"
+            className="flex size-11 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink"
           >
-            Log out
+            <LogOut className="size-5" aria-hidden="true" />
           </button>
-        </header>
+        </>
+      }
+    >
+      <p className="mb-5 text-sm text-ink-muted">
+        {SEX_LABELS[profile.sex]} · {ACTIVITY_LABELS[profile.activityLevel].title}
+      </p>
 
-        <div className="mb-6 rounded-2xl bg-green-600 px-6 py-8 text-center text-white shadow-sm">
-          <p className="text-sm tracking-wide text-green-100 uppercase">Daily target</p>
-          <p className="text-5xl font-bold">{targets.calories}</p>
-          <p className="text-sm text-green-100">kcal</p>
+      <div className="mb-6 rounded-2xl bg-gradient-to-br from-primary-600 to-primary-800 p-6 shadow-md">
+        <p className="mb-4 text-center text-xs font-semibold tracking-wide text-primary-100 uppercase">
+          Objetivo diario
+        </p>
+        <div className="flex justify-center">
+          <ProgressRing value={CONSUMED} max={targets.calories} size={188} aria-label="Calorías consumidas">
+            <div className="text-center">
+              <p className="text-4xl font-bold text-white">{formatNumber(CONSUMED)}</p>
+              <p className="text-sm text-primary-100">/ {formatNumber(targets.calories)} kcal</p>
+            </div>
+          </ProgressRing>
         </div>
-
-        {targets.floorApplied && (
-          <p className="mb-6 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Your calculated target was below a safe minimum, so we raised it to a safe floor.
-          </p>
-        )}
-
-        <div className="mb-6 grid grid-cols-3 gap-3">
-          <Stat label="Protein" value={`${targets.proteinGrams} g`} />
-          <Stat label="Fat" value={`${targets.fatGrams} g`} />
-          <Stat label="Carbs" value={`${targets.carbGrams} g`} />
-        </div>
-
-        <div className="mb-6 space-y-3 rounded-2xl bg-white p-4 shadow-sm">
-          <Row label="Fiber" value={`${targets.fiberGrams} g`} />
-          <Row label="Free sugar (max)" value={`${targets.sugarMaxGrams} g`} />
-          <Row label="Sodium (max)" value={`${targets.sodiumMaxMg} mg`} />
-          <Row label="Water" value={`${targets.waterMl} ml`} />
-        </div>
-
-        <Link
-          to="/onboarding"
-          className="block w-full rounded-lg border border-green-600 py-3 text-center text-base font-semibold text-green-700 transition hover:bg-green-50"
-        >
-          Edit profile
-        </Link>
       </div>
-    </div>
-  )
-}
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl bg-white p-3 text-center shadow-sm">
-      <p className="text-lg font-semibold text-gray-900">{value}</p>
-      <p className="text-xs text-gray-500">{label}</p>
-    </div>
-  )
-}
+      {targets.floorApplied && (
+        <Banner tone="info" className="mb-6">
+          El objetivo calculado estaba por debajo de un mínimo seguro, por lo que se ajustó a un piso
+          seguro.
+        </Banner>
+      )}
 
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-gray-500">{label}</span>
-      <span className="font-medium text-gray-900">{value}</span>
-    </div>
+      <div className="mb-6 grid grid-cols-3 gap-3">
+        <StatTile
+          icon={<Drumstick className="size-4" aria-hidden="true" />}
+          label="Proteína"
+          value={formatNumber(CONSUMED)}
+          sublabel={`/ ${formatNumber(targets.proteinGrams)} g`}
+          color="var(--color-protein)"
+          tint="var(--color-protein-tint)"
+          progress={(CONSUMED / targets.proteinGrams) * 100}
+        />
+        <StatTile
+          icon={<Droplet className="size-4" aria-hidden="true" />}
+          label="Grasas"
+          value={formatNumber(CONSUMED)}
+          sublabel={`/ ${formatNumber(targets.fatGrams)} g`}
+          color="var(--color-fat)"
+          tint="var(--color-fat-tint)"
+          progress={(CONSUMED / targets.fatGrams) * 100}
+        />
+        <StatTile
+          icon={<Wheat className="size-4" aria-hidden="true" />}
+          label="Carbos"
+          value={formatNumber(CONSUMED)}
+          sublabel={`/ ${formatNumber(targets.carbGrams)} g`}
+          color="var(--color-carbs)"
+          tint="var(--color-carbs-tint)"
+          progress={(CONSUMED / targets.carbGrams) * 100}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <StatTile
+          icon={<Leaf className="size-4" aria-hidden="true" />}
+          label="Fibra"
+          value={formatNumber(targets.fiberGrams)}
+          sublabel="g"
+        />
+        <StatTile
+          icon={<Candy className="size-4" aria-hidden="true" />}
+          label="Azúcar libre (máx.)"
+          value={formatNumber(targets.sugarMaxGrams)}
+          sublabel="g"
+        />
+        <StatTile
+          icon={<Gauge className="size-4" aria-hidden="true" />}
+          label="Sodio (máx.)"
+          value={formatNumber(targets.sodiumMaxMg)}
+          sublabel="mg"
+        />
+        <StatTile
+          icon={<Droplets className="size-4" aria-hidden="true" />}
+          label="Agua"
+          value={formatNumber(targets.waterMl)}
+          sublabel="ml"
+        />
+      </div>
+    </Screen>
   )
 }

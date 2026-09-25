@@ -1,18 +1,36 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Navigate, useNavigate } from 'react-router'
+import { Banner } from '../../components/ui/Banner'
+import { BrandMark } from '../../components/ui/BrandMark'
+import { Button } from '../../components/ui/Button'
+import { Input } from '../../components/ui/Input'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from './AuthProvider'
 import { loginSchema, type LoginFormValues } from './loginSchema'
 
-const inputClass =
-  'w-full rounded-lg border border-gray-300 px-4 py-3 text-base focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-600'
+/** Maps known Supabase auth error strings to friendlier, actionable Spanish copy. */
+function friendlyAuthError(message: string): string {
+  const normalized = message.toLowerCase()
+  if (normalized.includes('invalid login credentials')) {
+    return 'El correo electrónico o la contraseña son incorrectos.'
+  }
+  if (normalized.includes('email not confirmed')) {
+    return 'Es necesario confirmar el correo electrónico antes de iniciar sesión.'
+  }
+  if (normalized.includes('rate limit')) {
+    return 'Demasiados intentos. Esperar un momento e intentar nuevamente.'
+  }
+  return message
+}
 
 export function LoginPage() {
   const { session, loading } = useAuth()
   const navigate = useNavigate()
   const [authError, setAuthError] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
 
   const {
     register,
@@ -28,7 +46,7 @@ export function LoginPage() {
     setAuthError(null)
     const { error } = await supabase.auth.signInWithPassword(values)
     if (error) {
-      setAuthError(error.message)
+      setAuthError(friendlyAuthError(error.message))
       return
     }
     navigate('/', { replace: true })
@@ -37,48 +55,52 @@ export function LoginPage() {
   return (
     <div className="flex min-h-dvh flex-col justify-center px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       <div className="mx-auto w-full max-w-sm">
-        <h1 className="mb-8 text-center text-3xl font-bold text-green-700">Kcalma</h1>
+        <div className="mb-9 flex flex-col items-center text-center">
+          <BrandMark size="lg" className="mb-4" />
+          <h1 className="text-2xl font-bold text-ink">Kcalma</h1>
+          <p className="mt-1.5 text-sm text-ink-muted">Seguimiento de calorías simple y tranquilo.</p>
+        </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-          <div>
-            <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              className={inputClass}
-              {...register('email')}
-            />
-            {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
-          </div>
+          <Input
+            label="Correo electrónico"
+            id="email"
+            type="email"
+            autoComplete="email"
+            leadingIcon={<Mail className="size-5" aria-hidden="true" />}
+            error={errors.email?.message}
+            {...register('email')}
+          />
 
-          <div>
-            <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              className={inputClass}
-              {...register('password')}
-            />
-            {errors.password && (
-              <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-            )}
-          </div>
+          <Input
+            label="Contraseña"
+            id="password"
+            type={showPassword ? 'text' : 'password'}
+            autoComplete="current-password"
+            leadingIcon={<Lock className="size-5" aria-hidden="true" />}
+            trailing={
+              <button
+                type="button"
+                onClick={() => setShowPassword((show) => !show)}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                className="flex size-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:text-ink"
+              >
+                {showPassword ? (
+                  <EyeOff className="size-5" aria-hidden="true" />
+                ) : (
+                  <Eye className="size-5" aria-hidden="true" />
+                )}
+              </button>
+            }
+            error={errors.password?.message}
+            {...register('password')}
+          />
 
-          {authError && <p className="text-sm text-red-600">{authError}</p>}
+          {authError && <Banner tone="danger">{authError}</Banner>}
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full rounded-lg bg-green-600 py-3 text-base font-semibold text-white transition hover:bg-green-700 disabled:opacity-60"
-          >
-            {isSubmitting ? 'Signing in...' : 'Log in'}
-          </button>
+          <Button type="submit" loading={isSubmitting} size="lg">
+            {isSubmitting ? 'Iniciando sesión...' : 'Iniciar sesión'}
+          </Button>
         </form>
       </div>
     </div>

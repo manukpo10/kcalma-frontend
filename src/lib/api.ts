@@ -4,7 +4,7 @@ import { supabase } from './supabase'
 /** Thrown on 403: the signed-in Supabase account is not on the backend owner allowlist. */
 export class ApiForbiddenError extends Error {
   constructor() {
-    super('This account is not allowed.')
+    super('Esta cuenta no tiene acceso.')
     this.name = 'ApiForbiddenError'
   }
 }
@@ -12,7 +12,7 @@ export class ApiForbiddenError extends Error {
 /** Thrown on 404 — used by the profile guard to route to onboarding. */
 export class ApiNotFoundError extends Error {
   constructor() {
-    super('Not found')
+    super('No encontrado')
     this.name = 'ApiNotFoundError'
   }
 }
@@ -37,7 +37,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 
   if (response.status === 401) {
     await supabase.auth.signOut()
-    throw new Error('Session expired, please log in again.')
+    throw new Error('La sesión expiró. Iniciar sesión nuevamente.')
   }
 
   if (response.status === 403) {
@@ -49,7 +49,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   }
 
   if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`)
+    throw new Error(`Se produjo un error (${response.status}).`)
   }
 
   if (response.status === 204) {

@@ -14,9 +14,10 @@ export default defineConfig({
       manifest: {
         name: 'Kcalma',
         short_name: 'Kcalma',
-        description: 'Track your daily nutrition targets.',
-        theme_color: '#16a34a',
-        background_color: '#ffffff',
+        description: 'Seguimiento de objetivos nutricionales diarios.',
+        lang: 'es',
+        theme_color: '#121110',
+        background_color: '#121110',
         display: 'standalone',
         start_url: '/',
         scope: '/',

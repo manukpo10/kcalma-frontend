@@ -1,36 +1,86 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect, type ReactNode } from 'react'
+import {
+  Activity,
+  Cake,
+  Flame,
+  Minus,
+  Moon,
+  Ruler,
+  Scale,
+  Target,
+  TrendingDown,
+  TrendingUp,
+  Users,
+  Wind,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router'
+import { Banner } from '../../components/ui/Banner'
+import { Button } from '../../components/ui/Button'
+import { Input } from '../../components/ui/Input'
+import { ProgressBar } from '../../components/ui/ProgressBar'
+import { Screen } from '../../components/ui/Screen'
+import { SegmentedControl } from '../../components/ui/SegmentedControl'
+import { SelectableCard } from '../../components/ui/SelectableCard'
+import { ACTIVITY_LABELS, GOAL_LABELS, SEX_LABELS } from './labels'
 import { onboardingSchema, type OnboardingFormValues } from './onboardingSchema'
 import { useProfile, useUpdateProfile } from './useProfile'
 
-const ACTIVITY_LEVELS: { value: OnboardingFormValues['activityLevel']; label: string }[] = [
-  { value: 'SEDENTARY', label: 'Sedentary (little or no exercise)' },
-  { value: 'LIGHTLY_ACTIVE', label: 'Lightly active (1-3 days/week)' },
-  { value: 'MODERATELY_ACTIVE', label: 'Moderately active (3-5 days/week)' },
-  { value: 'VERY_ACTIVE', label: 'Very active (6-7 days/week)' },
-  { value: 'EXTRA_ACTIVE', label: 'Extra active (physical job or training twice a day)' },
+
+const SEX_OPTIONS: { value: OnboardingFormValues['sex']; label: string }[] = [
+  { value: 'FEMALE', label: SEX_LABELS.FEMALE },
+  { value: 'MALE', label: SEX_LABELS.MALE },
 ]
 
-const GOALS: { value: OnboardingFormValues['goal']; label: string }[] = [
-  { value: 'LOSE', label: 'Lose weight' },
-  { value: 'MAINTAIN', label: 'Maintain weight' },
-  { value: 'GAIN', label: 'Gain weight' },
+const ACTIVITY_ICONS: Record<OnboardingFormValues['activityLevel'], LucideIcon> = {
+  SEDENTARY: Moon,
+  LIGHTLY_ACTIVE: Wind,
+  MODERATELY_ACTIVE: Activity,
+  VERY_ACTIVE: Flame,
+  EXTRA_ACTIVE: Zap,
+}
+
+const ACTIVITY_LEVELS: {
+  value: OnboardingFormValues['activityLevel']
+  title: string
+  description: string
+  icon: LucideIcon
+}[] = (Object.keys(ACTIVITY_LABELS) as OnboardingFormValues['activityLevel'][]).map((value) => ({
+  value,
+  title: ACTIVITY_LABELS[value].title,
+  description: ACTIVITY_LABELS[value].description,
+  icon: ACTIVITY_ICONS[value],
+}))
+
+const GOALS: { value: OnboardingFormValues['goal']; label: string; icon: LucideIcon }[] = [
+  { value: 'LOSE', label: GOAL_LABELS.LOSE, icon: TrendingDown },
+  { value: 'MAINTAIN', label: GOAL_LABELS.MAINTAIN, icon: Minus },
+  { value: 'GAIN', label: GOAL_LABELS.GAIN, icon: TrendingUp },
 ]
 
-const inputClass =
-  'w-full rounded-lg border border-gray-300 px-4 py-3 text-base focus:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-600'
-const buttonClass =
-  'w-full rounded-lg bg-green-600 py-3 text-base font-semibold text-white transition hover:bg-green-700 disabled:opacity-60'
+const STEPS: { field: keyof OnboardingFormValues; question: string; icon: LucideIcon }[] = [
+  { field: 'sex', question: 'Sexo', icon: Users },
+  { field: 'birthDate', question: 'Fecha de nacimiento', icon: Cake },
+  { field: 'heightCm', question: 'Altura', icon: Ruler },
+  { field: 'weightKg', question: 'Peso', icon: Scale },
+  { field: 'activityLevel', question: 'Nivel de actividad', icon: Activity },
+  { field: 'goal', question: 'Objetivo', icon: Target },
+]
 
 export function OnboardingPage() {
   const navigate = useNavigate()
   const { data: existing } = useProfile()
   const updateProfile = useUpdateProfile()
+  const [step, setStep] = useState(0)
 
   const {
     register,
+    watch,
+    setValue,
+    trigger,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
@@ -71,91 +121,143 @@ export function OnboardingPage() {
     navigate('/', { replace: true })
   }
 
+  const isLastStep = step === STEPS.length - 1
+
+  const handleNext = async () => {
+    const valid = await trigger(STEPS[step].field)
+    if (!valid) return
+
+    if (!isLastStep) {
+      setStep((current) => current + 1)
+      return
+    }
+
+    await handleSubmit(onSubmit)()
+  }
+
+  const handleBack = () => {
+    if (step > 0) {
+      setStep((current) => current - 1)
+      return
+    }
+    if (existing) {
+      navigate('/')
+    }
+  }
+
+  const current = STEPS[step]
+  const StepIcon = current.icon
+
   return (
-    <div className="min-h-dvh px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-      <div className="mx-auto w-full max-w-sm py-8">
-        <h1 className="mb-6 text-2xl font-bold text-green-700">
-          {existing ? 'Edit profile' : 'Tell us about yourself'}
-        </h1>
+    <Screen
+      title={existing ? 'Editar perfil' : 'Información personal'}
+      onBack={step > 0 || existing ? handleBack : undefined}
+    >
+      <div className="mb-6">
+        <p className="mb-2 text-xs font-semibold tracking-wide text-ink-muted uppercase">
+          Paso {step + 1} de {STEPS.length}
+        </p>
+        <ProgressBar value={step + 1} max={STEPS.length} aria-label="Progreso" />
+      </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-          <Field label="Sex" error={errors.sex?.message}>
-            <select className={inputClass} {...register('sex')}>
-              <option value="FEMALE">Female</option>
-              <option value="MALE">Male</option>
-            </select>
-          </Field>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          void handleNext()
+        }}
+        noValidate
+      >
+        <div key={step} className="animate-step-in">
+          <div className="mb-7 flex flex-col items-center text-center">
+            <span className="mb-3 flex size-14 items-center justify-center rounded-full bg-primary-tint text-primary-300">
+              <StepIcon className="size-7" aria-hidden="true" strokeWidth={2} />
+            </span>
+            <h2 className="text-xl font-bold text-ink">{current.question}</h2>
+          </div>
 
-          <Field label="Birth date" error={errors.birthDate?.message}>
-            <input type="date" className={inputClass} {...register('birthDate')} />
-          </Field>
-
-          <Field label="Height (cm)" error={errors.heightCm?.message}>
-            <input
-              type="number"
-              inputMode="numeric"
-              className={inputClass}
-              {...register('heightCm')}
+          {current.field === 'sex' && (
+            <SegmentedControl
+              options={SEX_OPTIONS}
+              value={watch('sex')}
+              onChange={(value) => setValue('sex', value, { shouldValidate: true })}
+              aria-label="Sexo"
             />
-          </Field>
-
-          <Field label="Weight (kg)" error={errors.weightKg?.message}>
-            <input
-              type="number"
-              step="0.1"
-              inputMode="decimal"
-              className={inputClass}
-              {...register('weightKg')}
-            />
-          </Field>
-
-          <Field label="Activity level" error={errors.activityLevel?.message}>
-            <select className={inputClass} {...register('activityLevel')}>
-              {ACTIVITY_LEVELS.map((level) => (
-                <option key={level.value} value={level.value}>
-                  {level.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Goal" error={errors.goal?.message}>
-            <select className={inputClass} {...register('goal')}>
-              {GOALS.map((goal) => (
-                <option key={goal.value} value={goal.value}>
-                  {goal.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          {updateProfile.isError && (
-            <p className="text-sm text-red-600">{updateProfile.error.message}</p>
           )}
 
-          <button type="submit" disabled={isSubmitting} className={buttonClass}>
-            {isSubmitting ? 'Saving...' : 'Save'}
-          </button>
-        </form>
-      </div>
-    </div>
-  )
-}
+          {current.field === 'birthDate' && (
+            <Input
+              label="Fecha de nacimiento"
+              type="date"
+              max={new Date().toISOString().slice(0, 10)}
+              error={errors.birthDate?.message}
+              {...register('birthDate')}
+            />
+          )}
 
-function Field({
-  label,
-  error,
-  children,
-}: {
-  label: string
-  error?: string
-  children: ReactNode
-}) {
-  return (
-    <div>
-      <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
-      {children}
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
-    </div>
+          {current.field === 'heightCm' && (
+            <Input
+              label="Altura"
+              type="text"
+              inputMode="decimal"
+              placeholder="170"
+              trailing={<span className="text-sm font-medium text-ink-muted">cm</span>}
+              error={errors.heightCm?.message}
+              {...register('heightCm')}
+            />
+          )}
+
+          {current.field === 'weightKg' && (
+            <Input
+              label="Peso"
+              type="text"
+              inputMode="decimal"
+              placeholder="65"
+              trailing={<span className="text-sm font-medium text-ink-muted">kg</span>}
+              error={errors.weightKg?.message}
+              {...register('weightKg')}
+            />
+          )}
+
+          {current.field === 'activityLevel' && (
+            <div role="radiogroup" aria-label="Nivel de actividad" className="space-y-2.5">
+              {ACTIVITY_LEVELS.map((level) => (
+                <SelectableCard
+                  key={level.value}
+                  name="activityLevel"
+                  selected={watch('activityLevel') === level.value}
+                  onSelect={() => setValue('activityLevel', level.value, { shouldValidate: true })}
+                  title={level.title}
+                  description={level.description}
+                  icon={<level.icon className="size-5" aria-hidden="true" />}
+                />
+              ))}
+            </div>
+          )}
+
+          {current.field === 'goal' && (
+            <SegmentedControl
+              options={GOALS.map((goal) => ({
+                value: goal.value,
+                label: goal.label,
+                icon: <goal.icon className="size-4" aria-hidden="true" />,
+              }))}
+              value={watch('goal')}
+              onChange={(value) => setValue('goal', value, { shouldValidate: true })}
+              aria-label="Objetivo"
+            />
+          )}
+        </div>
+
+        {updateProfile.isError && (
+          <Banner tone="danger" className="mt-5">
+            {updateProfile.error.message}
+          </Banner>
+        )}
+
+        <Button type="submit" loading={isSubmitting} size="lg" className="mt-8">
+          {isLastStep ? (isSubmitting ? 'Guardando...' : 'Guardar') : 'Siguiente'}
+        </Button>
+      </form>
+    </Screen>
   )
 }
