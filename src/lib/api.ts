@@ -21,15 +21,19 @@ export class ApiNotFoundError extends Error {
  * Fetch wrapper that attaches the current Supabase access token.
  * 401 -> session is gone, sign out so the app falls back to the login screen.
  * 403 -> valid session, but this account is not on the backend owner allowlist.
+ *
+ * `init.body` may be a `FormData` (e.g. the photo-analyze upload) — in that case the
+ * `Content-Type` is left for the browser to set (with its multipart boundary), never forced to JSON.
  */
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const { data } = await supabase.auth.getSession()
   const token = data.session?.access_token
+  const isFormData = init.body instanceof FormData
 
   const response = await fetch(`${env.apiUrl}${path}`, {
     ...init,
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init.headers,
     },
@@ -49,7 +53,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   }
 
   if (!response.ok) {
-    throw new Error(`Se produjo un error (${response.status}).`)
+    throw new Error(await friendlyErrorMessage(response))
   }
 
   if (response.status === 204) {
@@ -57,4 +61,17 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   }
 
   return (await response.json()) as T
+}
+
+/** Backend errors (e.g. the Gemini-analysis 502) carry a Spanish {"message": "..."} body — prefer it. */
+async function friendlyErrorMessage(response: Response): Promise<string> {
+  try {
+    const body: unknown = await response.json()
+    if (body && typeof body === 'object' && 'message' in body && typeof body.message === 'string') {
+      return body.message
+    }
+  } catch {
+    // Not a JSON body — fall through to the generic message.
+  }
+  return `Se produjo un error (${response.status}).`
 }

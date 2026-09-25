@@ -14,7 +14,9 @@ interface ButtonProps extends Omit<ComponentProps<'button'>, 'className'> {
 }
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: 'bg-primary text-primary-fg shadow-sm hover:bg-primary-700 active:bg-primary-800',
+  // brightness filters (not darker ramp steps): the lime primary needs a dark foreground for AA
+  // contrast, and primary-700/800 are dark enough that dark-on-dark would fail on press/hover.
+  primary: 'bg-primary text-primary-fg shadow-sm hover:brightness-95 active:brightness-90',
   secondary:
     'bg-surface text-ink border border-hairline shadow-xs hover:bg-surface-2 active:bg-surface-2',
   ghost: 'text-ink-muted hover:bg-surface-2 hover:text-ink',
