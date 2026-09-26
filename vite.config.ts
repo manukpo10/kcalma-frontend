@@ -41,7 +41,11 @@ export default defineConfig({
       workbox: {
         // Precache build assets only. No runtimeCaching entries: API and Supabase
         // calls are cross-origin and must always hit the network, never the cache.
-        globPatterns: ['**/*.{js,css,html,ico,png,webp,svg,webmanifest}'],
+        // No "png" here on purpose: every in-app image is WebP-only now (see BrandMark.tsx /
+        // LoginPage.tsx). The remaining PNGs in public/ (manifest/apple-touch icons) are OS-level
+        // assets fetched once on install, not part of the app shell — `includeAssets` below still
+        // force-includes apple-touch-icon-180x180.png since iOS reads it directly.
+        globPatterns: ['**/*.{js,css,html,ico,webp,svg,webmanifest}'],
       },
     }),
   ],

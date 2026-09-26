@@ -2,31 +2,41 @@ import { Suspense, lazy } from 'react'
 import { Navigate, Route, Routes } from 'react-router'
 import { AppShell } from './components/AppShell'
 import { LoadingScreen } from './components/LoadingScreen'
+import { OfflineBanner } from './components/OfflineBanner'
 import { UpdatePrompt } from './components/UpdatePrompt'
+import { ToastProvider } from './components/ui/ToastProvider'
 import { LoginPage } from './features/auth/LoginPage'
 import { RequireAuth } from './features/auth/RequireAuth'
 import { TodayPage } from './features/day/TodayPage'
-import { AddMealPage } from './features/food/AddMealPage'
-import { OnboardingPage } from './features/profile/OnboardingPage'
 import { ProfilePage } from './features/profile/ProfilePage'
 import { RequireProfile } from './features/profile/RequireProfile'
-import { SuggestMealsPage } from './features/suggestions/SuggestMealsPage'
 
-// Recharts is sizeable — lazy-load the whole Progreso route so it never bloats the initial bundle.
+// Every route below is reached behind at least one guard/redirect, never the very first paint —
+// lazy-loading them keeps the initial bundle to just "Hoy" + auth/profile plumbing.
 const ProgressPage = lazy(() => import('./features/progress/ProgressPage').then((m) => ({ default: m.ProgressPage })))
+const AddMealPage = lazy(() => import('./features/food/AddMealPage').then((m) => ({ default: m.AddMealPage })))
+const SuggestMealsPage = lazy(() =>
+  import('./features/suggestions/SuggestMealsPage').then((m) => ({ default: m.SuggestMealsPage })),
+)
+const OnboardingPage = lazy(() =>
+  import('./features/profile/OnboardingPage').then((m) => ({ default: m.OnboardingPage })),
+)
 
 export default function App() {
   return (
-    <>
-      {/* Outside every auth guard below so the update toast also works on /login. */}
+    <ToastProvider>
+      {/* Outside every auth guard below so the update toast/offline banner also work on /login. */}
       <UpdatePrompt />
+      <OfflineBanner />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route
           path="/onboarding"
           element={
             <RequireAuth>
-              <OnboardingPage />
+              <Suspense fallback={<LoadingScreen />}>
+                <OnboardingPage />
+              </Suspense>
             </RequireAuth>
           }
         />
@@ -35,7 +45,9 @@ export default function App() {
           element={
             <RequireAuth>
               <RequireProfile>
-                <AddMealPage />
+                <Suspense fallback={<LoadingScreen />}>
+                  <AddMealPage />
+                </Suspense>
               </RequireProfile>
             </RequireAuth>
           }
@@ -58,11 +70,18 @@ export default function App() {
               </Suspense>
             }
           />
-          <Route path="sugerencias" element={<SuggestMealsPage />} />
+          <Route
+            path="sugerencias"
+            element={
+              <Suspense fallback={<LoadingScreen />}>
+                <SuggestMealsPage />
+              </Suspense>
+            }
+          />
           <Route path="perfil" element={<ProfilePage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </>
+    </ToastProvider>
   )
 }

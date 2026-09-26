@@ -3,7 +3,6 @@ import { Eye, EyeOff, Lock, Mail } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Navigate, useNavigate } from 'react-router'
-import logoFullPng from '../../assets/brand/logo-full.png'
 import logoFullWebp from '../../assets/brand/logo-full.webp'
 import { Banner } from '../../components/ui/Banner'
 import { Button } from '../../components/ui/Button'
@@ -58,10 +57,7 @@ export function LoginPage() {
       <div className="mx-auto w-full max-w-sm">
         <div className="mb-9 flex flex-col items-center text-center">
           <h1 className="sr-only">Kcalma</h1>
-          <picture>
-            <source srcSet={logoFullWebp} type="image/webp" />
-            <img src={logoFullPng} alt="Kcalma" className="h-44 w-auto" />
-          </picture>
+          <img src={logoFullWebp} alt="Kcalma" className="h-44 w-auto" />
           <p className="mt-1.5 text-sm text-ink-muted">Come bien, llega a tu meta</p>
         </div>
 
