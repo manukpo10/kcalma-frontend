@@ -3,6 +3,7 @@ import { Banner } from '../../components/ui/Banner'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { MacroChips } from '../../components/ui/MacroChips'
+import { SourceBadge } from '../../components/ui/SourceBadge'
 import { formatNumber } from '../../lib/format'
 import { GramsStepper } from './GramsStepper'
 import { MealTypePicker } from './MealTypePicker'
@@ -62,7 +63,9 @@ export function ReviewStep({
               return (
                 <Card key={item.key} className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-semibold text-ink capitalize">{item.name}</p>
+                    <p className="font-semibold text-ink capitalize">
+                      {item.name} <SourceBadge source={item.source} className="ml-1" />
+                    </p>
                     <button
                       type="button"
                       onClick={() => onRemoveItem(item.key)}

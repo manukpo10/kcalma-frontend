@@ -41,6 +41,7 @@ export function ManualAddStep({ entryDate, onSubmit, saving, saveError }: Manual
       sugarPer100: Number(values.sugarPer100 || 0),
       sodiumMgPer100: Number(values.sodiumMgPer100 || 0),
       source: 'MANUAL',
+      fdcId: null,
     })
   }
 

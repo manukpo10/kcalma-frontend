@@ -124,6 +124,8 @@ export function ProfilePage() {
         </Button>
       </div>
 
+      <p className="mt-6 text-center text-xs text-ink-muted">Datos nutricionales: USDA FoodData Central</p>
+
       <div aria-hidden="true" className={TAB_BAR_CLEARANCE_CLASS} />
     </Screen>
   )

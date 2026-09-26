@@ -1,6 +1,11 @@
 export type MealType = 'DESAYUNO' | 'ALMUERZO' | 'MERIENDA' | 'CENA' | 'SNACK'
 
-export type FoodSource = 'PHOTO' | 'MANUAL'
+/**
+ * Where a food item's nutrient values came from: PERSONAL (the user's own saved library), USDA
+ * (matched USDA FoodData Central), ESTIMATED (no confident match — an AI estimate, revisable), or
+ * MANUAL (typed by hand, never resolved against either table).
+ */
+export type FoodSource = 'PERSONAL' | 'USDA' | 'ESTIMATED' | 'MANUAL'
 
 export interface Totals {
   kcal: number
@@ -31,6 +36,7 @@ export interface FoodEntry extends Per100 {
   grams: number
   totals: Totals
   source: FoodSource
+  fdcId: number | null
   createdAt: string
   updatedAt: string
 }
@@ -38,6 +44,8 @@ export interface FoodEntry extends Per100 {
 export interface AnalyzedItem extends Per100 {
   name: string
   grams: number
+  source: FoodSource
+  fdcId: number | null
 }
 
 export interface FoodAnalysisResponse {
@@ -51,6 +59,7 @@ export interface FoodEntryRequest extends Per100 {
   name: string
   grams: number
   source: FoodSource
+  fdcId: number | null
 }
 
 export interface UpdateFoodEntryRequest {
@@ -63,4 +72,6 @@ export interface DraftItem extends Per100 {
   key: string
   name: string
   grams: number
+  source: FoodSource
+  fdcId: number | null
 }

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Banner } from '../../components/ui/Banner'
 import { Button } from '../../components/ui/Button'
 import { MacroChips } from '../../components/ui/MacroChips'
+import { SourceBadge } from '../../components/ui/SourceBadge'
 import { GramsStepper } from '../food/GramsStepper'
 import { MealTypePicker } from '../food/MealTypePicker'
 import { computeTotals } from '../food/nutritionMath'
@@ -47,7 +48,9 @@ export function EditEntryModal({ entry, onClose }: EditEntryModalProps) {
         className="w-full max-w-md rounded-t-2xl bg-surface p-5 pb-[max(env(safe-area-inset-bottom),1.25rem)] shadow-lg sm:rounded-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <p className="mb-1 text-lg font-bold text-ink capitalize">{entry.name}</p>
+        <p className="mb-1 text-lg font-bold text-ink capitalize">
+          {entry.name} <SourceBadge source={entry.source} className="ml-1" />
+        </p>
         <MacroChips
           kcal={totals.kcal}
           protein={totals.protein}

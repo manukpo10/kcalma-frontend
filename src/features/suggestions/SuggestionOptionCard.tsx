@@ -1,4 +1,4 @@
-import { Clock, Sparkles } from 'lucide-react'
+import { Clock, Sparkles, TriangleAlert } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { MacroChips } from '../../components/ui/MacroChips'
@@ -11,6 +11,8 @@ interface SuggestionOptionCardProps {
 
 /** One suggested-meal result card: title, description, prep time, macro chips, "por qué te sirve", and a Registrar CTA. */
 export function SuggestionOptionCard({ option, onRegister }: SuggestionOptionCardProps) {
+  const hasEstimatedItem = option.items.some((item) => item.source === 'ESTIMATED')
+
   return (
     <Card className="space-y-3">
       <div>
@@ -35,6 +37,13 @@ export function SuggestionOptionCard({ option, onRegister }: SuggestionOptionCar
         <Sparkles className="mt-0.5 size-3.5 shrink-0 text-primary-300" aria-hidden="true" />
         {option.why}
       </p>
+
+      {hasEstimatedItem && (
+        <p className="flex items-start gap-1.5 text-xs text-ink-muted">
+          <TriangleAlert className="mt-0.5 size-3.5 shrink-0" style={{ color: 'var(--color-warning)' }} aria-hidden="true" />
+          Algunos valores son estimados por IA — revisalos al registrar.
+        </p>
+      )}
 
       <Button size="md" onClick={onRegister}>
         Registrar

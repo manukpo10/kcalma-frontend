@@ -13,7 +13,7 @@ import { mealTypeForNow } from './labels'
 import { ManualAddStep } from './ManualAddStep'
 import { computeTotals, sumTotals } from './nutritionMath'
 import { ReviewStep, type DayPreview } from './ReviewStep'
-import type { DraftItem, FoodEntryRequest, MealType } from './types'
+import type { AnalyzedItem, DraftItem, FoodEntryRequest, MealType } from './types'
 import { useAnalyzeDescription, useAnalyzePhoto, useSaveFoodEntries } from './useFoodEntries'
 
 type Step = 'choose' | 'analyzing' | 'review' | 'manual' | 'describe'
@@ -33,17 +33,7 @@ interface SuggestionPrefill {
   mealType: MealType
 }
 
-function analyzedToDraft(item: {
-  name: string
-  grams: number
-  kcalPer100: number
-  proteinPer100: number
-  fatPer100: number
-  carbsPer100: number
-  fiberPer100: number
-  sugarPer100: number
-  sodiumMgPer100: number
-}): DraftItem {
+function analyzedToDraft(item: AnalyzedItem): DraftItem {
   return { key: crypto.randomUUID(), ...item, grams: Math.max(1, Math.round(item.grams)) }
 }
 
@@ -142,7 +132,8 @@ export function AddMealPage() {
       fiberPer100: item.fiberPer100,
       sugarPer100: item.sugarPer100,
       sodiumMgPer100: item.sodiumMgPer100,
-      source: 'PHOTO',
+      source: item.source,
+      fdcId: item.fdcId,
     }))
     await saveEntries.mutateAsync(entries)
     navigate('/', { replace: true })
