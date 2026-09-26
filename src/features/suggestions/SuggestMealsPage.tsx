@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Screen } from '../../components/ui/Screen'
 import { Skeleton } from '../../components/ui/Skeleton'
+import { TAB_BAR_CLEARANCE_CLASS } from '../../components/BottomTabBar'
 import { todayIso } from '../../lib/date'
 import { cn } from '../../lib/cn'
 import type { AnalyzedItem, DraftItem, MealType } from '../food/types'
@@ -62,16 +63,11 @@ export function SuggestMealsPage() {
     navigate('/agregar', { state: { prefill: { items: toDraftItems(option.items), mealType } } })
   }
 
-  const handleBack = () => {
-    if (step === 'form') {
-      navigate('/')
-      return
-    }
-    setStep('form')
-  }
+  // This page is a tab now: the tab bar handles leaving it, the back arrow only steps back from the results.
+  const handleBack = () => setStep('form')
 
   return (
-    <Screen title="¿Qué como?" onBack={step === 'loading' ? undefined : handleBack}>
+    <Screen title="¿Qué como?" onBack={step === 'results' ? handleBack : undefined}>
       {step === 'form' && (
         <div className="space-y-5">
           {error && <Banner tone="danger">{error}</Banner>}
@@ -148,6 +144,8 @@ export function SuggestMealsPage() {
           </Button>
         </div>
       )}
+
+      <div aria-hidden="true" className={TAB_BAR_CLEARANCE_CLASS} />
     </Screen>
   )
 }

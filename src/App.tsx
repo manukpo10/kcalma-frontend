@@ -41,16 +41,6 @@ export default function App() {
           }
         />
         <Route
-          path="/sugerencias"
-          element={
-            <RequireAuth>
-              <RequireProfile>
-                <SuggestMealsPage />
-              </RequireProfile>
-            </RequireAuth>
-          }
-        />
-        <Route
           element={
             <RequireAuth>
               <RequireProfile>
@@ -68,6 +58,7 @@ export default function App() {
               </Suspense>
             }
           />
+          <Route path="sugerencias" element={<SuggestMealsPage />} />
           <Route path="perfil" element={<ProfilePage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
