@@ -1,5 +1,5 @@
 import { Candy, ChevronLeft, ChevronRight, Drumstick, Droplet, Gauge, Leaf, Pencil, Sparkles, Trash2, Wheat } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Banner } from '../../components/ui/Banner'
 import { BrandMark } from '../../components/ui/BrandMark'
@@ -21,15 +21,65 @@ interface DeletingMeal {
   entries: FoodEntry[]
 }
 
+/** Minimum gap between two visibility/focus-triggered checks — both events can fire together
+ *  (e.g. returning from the native camera during add-meal) and this collapses that into one. */
+const VISIBILITY_CHECK_MIN_INTERVAL_MS = 2000
+
 export function TodayPage() {
   const navigate = useNavigate()
   const [date, setDate] = useState(todayIso)
-  const { data, isPending, error } = useDay(date)
+  const { data, isPending, error, refetch } = useDay(date)
   const [editingEntry, setEditingEntry] = useState<FoodEntry | null>(null)
   const [deletingMeal, setDeletingMeal] = useState<DeletingMeal | null>(null)
 
   const isToday = date === todayIso()
   const allMealsEmpty = data ? MEAL_TYPE_ORDER.every((mealType) => (data.meals[mealType] ?? []).length === 0) : false
+
+  // iOS suspends an installed PWA in the background instead of reloading it, so without this,
+  // "Hoy" can silently keep showing yesterday (or stale totals) for as long as the app stays
+  // open — see the discovery this fixes: `date` used to be frozen at mount forever.
+  const dateRef = useRef(date)
+  const knownTodayRef = useRef(todayIso())
+  const refetchRef = useRef(refetch)
+  const lastCheckRef = useRef(0)
+
+  useEffect(() => {
+    dateRef.current = date
+  }, [date])
+
+  useEffect(() => {
+    refetchRef.current = refetch
+  }, [refetch])
+
+  useEffect(() => {
+    const checkFreshness = () => {
+      if (document.visibilityState !== 'visible') return
+
+      const now = Date.now()
+      if (now - lastCheckRef.current < VISIBILITY_CHECK_MIN_INTERVAL_MS) return
+      lastCheckRef.current = now
+
+      const currentToday = todayIso()
+      const rolledOverPastMidnight = currentToday !== knownTodayRef.current
+      const wasShowingToday = dateRef.current === knownTodayRef.current
+      knownTodayRef.current = currentToday
+
+      if (rolledOverPastMidnight && wasShowingToday) {
+        // Follow "today" forward — changing the date itself triggers a fresh fetch for it.
+        setDate(currentToday)
+        return
+      }
+
+      void refetchRef.current()
+    }
+
+    document.addEventListener('visibilitychange', checkFreshness)
+    window.addEventListener('focus', checkFreshness)
+    return () => {
+      document.removeEventListener('visibilitychange', checkFreshness)
+      window.removeEventListener('focus', checkFreshness)
+    }
+  }, [])
 
   return (
     <Screen title="Hoy" icon={<BrandMark size="sm" className="mr-1" />}>
