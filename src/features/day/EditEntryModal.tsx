@@ -3,13 +3,15 @@ import { useState } from 'react'
 import { Banner } from '../../components/ui/Banner'
 import { Button } from '../../components/ui/Button'
 import { MacroChips } from '../../components/ui/MacroChips'
+import { Sheet } from '../../components/ui/Sheet'
 import { SourceBadge } from '../../components/ui/SourceBadge'
+import { useToast } from '../../components/ui/ToastProvider'
 import { GramsStepper } from '../food/GramsStepper'
 import { IngredientsSection } from '../food/IngredientsSection'
 import { MealTypePicker } from '../food/MealTypePicker'
-import { computeDishTotals, computeTotals, round1, sumGrams } from '../food/nutritionMath'
+import { computeDishTotals, computeTotals, entryToCreateRequest, round1, sumGrams } from '../food/nutritionMath'
 import type { DraftIngredient, FoodEntry, MealType } from '../food/types'
-import { useDeleteFoodEntry, useUpdateFoodEntry } from '../food/useFoodEntries'
+import { useDeleteFoodEntry, useSaveFoodEntries, useUpdateFoodEntry } from '../food/useFoodEntries'
 
 interface EditEntryModalProps {
   entry: FoodEntry
@@ -30,6 +32,8 @@ export function EditEntryModal({ entry, onClose }: EditEntryModalProps) {
 
   const updateEntry = useUpdateFoodEntry()
   const deleteEntry = useDeleteFoodEntry()
+  const saveEntries = useSaveFoodEntries()
+  const { showToast } = useToast()
 
   const totals = ingredients ? computeDishTotals(ingredients) : computeTotals(entry, grams)
   const error = updateEntry.error ?? deleteEntry.error
@@ -94,74 +98,64 @@ export function EditEntryModal({ entry, onClose }: EditEntryModalProps) {
   const handleDelete = async () => {
     await deleteEntry.mutateAsync(entry.id)
     onClose()
+    showToast({
+      message: 'Eliminado · Deshacer',
+      actionLabel: 'Deshacer',
+      onAction: async () => {
+        await saveEntries.mutateAsync([entryToCreateRequest(entry)])
+      },
+    })
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Editar ${entry.name}`}
-      className="fixed inset-0 z-30 flex items-end justify-center bg-black/60 sm:items-center"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md rounded-t-2xl bg-surface p-5 pb-[max(env(safe-area-inset-bottom),1.25rem)] shadow-lg sm:rounded-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <p className="mb-1 text-lg font-bold text-ink capitalize">
-          {entry.name} <SourceBadge source={entry.source} className="ml-1" />
-        </p>
-        <MacroChips
-          kcal={totals.kcal}
-          protein={totals.protein}
-          fat={totals.fat}
-          carbs={totals.carbs}
-          className="mb-5"
-        />
+    <Sheet onClose={onClose} ariaLabel={`Editar ${entry.name}`}>
+      <p className="mb-1 text-lg font-bold text-ink capitalize">
+        {entry.name} <SourceBadge source={entry.source} className="ml-1" />
+      </p>
+      <MacroChips kcal={totals.kcal} protein={totals.protein} fat={totals.fat} carbs={totals.carbs} className="mb-5" />
 
-        <div className="mb-4">
-          <p className="mb-2 text-sm font-medium text-ink">Gramos</p>
-          <GramsStepper value={grams} onChange={handleGramsChange} />
-        </div>
-
-        {ingredients && (
-          <div className="mb-4">
-            <IngredientsSection
-              ingredients={ingredients}
-              onChangeGrams={handleIngredientGramsChange}
-              onRemove={handleRemoveIngredient}
-            />
-          </div>
-        )}
-
-        <div className="mb-5">
-          <p className="mb-2 text-sm font-medium text-ink">Comida</p>
-          <MealTypePicker value={mealType} onChange={setMealType} />
-        </div>
-
-        {error && <Banner tone="danger" className="mb-4">{error instanceof Error ? error.message : 'Ocurrió un error.'}</Banner>}
-
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <Button
-              variant="danger"
-              icon={<Trash2 className="size-5" aria-hidden="true" />}
-              loading={deleteEntry.isPending}
-              onClick={() => void handleDelete()}
-            >
-              Eliminar
-            </Button>
-          </div>
-          <div className="flex-1">
-            <Button loading={updateEntry.isPending} onClick={() => void handleSave()}>
-              Guardar
-            </Button>
-          </div>
-        </div>
-        <Button variant="ghost" className="mt-2" onClick={onClose}>
-          Cancelar
-        </Button>
+      <div className="mb-4">
+        <p className="mb-2 text-sm font-medium text-ink">Gramos</p>
+        <GramsStepper value={grams} onChange={handleGramsChange} />
       </div>
-    </div>
+
+      {ingredients && (
+        <div className="mb-4">
+          <IngredientsSection
+            ingredients={ingredients}
+            onChangeGrams={handleIngredientGramsChange}
+            onRemove={handleRemoveIngredient}
+          />
+        </div>
+      )}
+
+      <div className="mb-5">
+        <p className="mb-2 text-sm font-medium text-ink">Comida</p>
+        <MealTypePicker value={mealType} onChange={setMealType} />
+      </div>
+
+      {error && <Banner tone="danger" className="mb-4">{error instanceof Error ? error.message : 'Ocurrió un error.'}</Banner>}
+
+      <div className="flex gap-3">
+        <div className="flex-1">
+          <Button
+            variant="danger"
+            icon={<Trash2 className="size-5" aria-hidden="true" />}
+            loading={deleteEntry.isPending}
+            onClick={() => void handleDelete()}
+          >
+            Eliminar
+          </Button>
+        </div>
+        <div className="flex-1">
+          <Button loading={updateEntry.isPending} onClick={() => void handleSave()}>
+            Guardar
+          </Button>
+        </div>
+      </div>
+      <Button variant="ghost" className="mt-2" onClick={onClose}>
+        Cancelar
+      </Button>
+    </Sheet>
   )
 }

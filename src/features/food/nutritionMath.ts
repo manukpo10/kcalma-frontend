@@ -1,4 +1,4 @@
-import type { FoodSource, Per100, Totals } from './types'
+import type { FoodEntry, FoodEntryRequest, FoodSource, Per100, Totals } from './types'
 
 /**
  * totals = per100 * grams / 100, rounded to the nearest whole unit — mirrors the backend's
@@ -94,4 +94,26 @@ export function sumGrams(ingredients: { grams: number }[]): number {
 /** Rounds to one decimal place — mirrors the backend's `setScale(1, RoundingMode.HALF_UP)`. */
 export function round1(value: number): number {
   return Math.round(value * 10) / 10
+}
+
+/** Turns an already-saved entry back into the shape `POST /api/food/entries` accepts — used to
+ *  undo a delete by re-creating the exact same entry (same name/grams/meal/date/per-100g
+ *  values/source/ingredients) rather than trying to special-case a "restore" endpoint. */
+export function entryToCreateRequest(entry: FoodEntry): FoodEntryRequest {
+  return {
+    entryDate: entry.entryDate,
+    mealType: entry.mealType,
+    name: entry.name,
+    grams: entry.grams,
+    kcalPer100: entry.kcalPer100,
+    proteinPer100: entry.proteinPer100,
+    fatPer100: entry.fatPer100,
+    carbsPer100: entry.carbsPer100,
+    fiberPer100: entry.fiberPer100,
+    sugarPer100: entry.sugarPer100,
+    sodiumMgPer100: entry.sodiumMgPer100,
+    source: entry.source,
+    fdcId: entry.fdcId,
+    ingredients: entry.ingredients ?? undefined,
+  }
 }
