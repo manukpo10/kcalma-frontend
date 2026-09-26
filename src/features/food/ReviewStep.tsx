@@ -2,6 +2,7 @@ import { X } from 'lucide-react'
 import { Banner } from '../../components/ui/Banner'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { MacroChips } from '../../components/ui/MacroChips'
 import { formatNumber } from '../../lib/format'
 import { GramsStepper } from './GramsStepper'
 import { MealTypePicker } from './MealTypePicker'
@@ -72,12 +73,12 @@ export function ReviewStep({
                     </button>
                   </div>
                   <GramsStepper value={item.grams} onChange={(grams) => onChangeItem(item.key, { grams })} />
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-muted">
-                    <span className="font-semibold text-ink">{formatNumber(totals.kcal)} kcal</span>
-                    <span>P {formatNumber(totals.protein)} g</span>
-                    <span>G {formatNumber(totals.fat)} g</span>
-                    <span>C {formatNumber(totals.carbs)} g</span>
-                  </div>
+                  <MacroChips
+                    kcal={totals.kcal}
+                    protein={totals.protein}
+                    fat={totals.fat}
+                    carbs={totals.carbs}
+                  />
                 </Card>
               )
             })}

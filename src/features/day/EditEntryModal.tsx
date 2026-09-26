@@ -2,7 +2,7 @@ import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Banner } from '../../components/ui/Banner'
 import { Button } from '../../components/ui/Button'
-import { formatNumber } from '../../lib/format'
+import { MacroChips } from '../../components/ui/MacroChips'
 import { GramsStepper } from '../food/GramsStepper'
 import { MealTypePicker } from '../food/MealTypePicker'
 import { computeTotals } from '../food/nutritionMath'
@@ -48,10 +48,13 @@ export function EditEntryModal({ entry, onClose }: EditEntryModalProps) {
         onClick={(event) => event.stopPropagation()}
       >
         <p className="mb-1 text-lg font-bold text-ink capitalize">{entry.name}</p>
-        <p className="mb-5 text-sm text-ink-muted">
-          {formatNumber(totals.kcal)} kcal · P {formatNumber(totals.protein)} g · G {formatNumber(totals.fat)} g · C{' '}
-          {formatNumber(totals.carbs)} g
-        </p>
+        <MacroChips
+          kcal={totals.kcal}
+          protein={totals.protein}
+          fat={totals.fat}
+          carbs={totals.carbs}
+          className="mb-5"
+        />
 
         <div className="mb-4">
           <p className="mb-2 text-sm font-medium text-ink">Gramos</p>
