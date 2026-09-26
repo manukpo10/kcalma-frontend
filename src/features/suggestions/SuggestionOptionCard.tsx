@@ -11,7 +11,9 @@ interface SuggestionOptionCardProps {
 
 /** One suggested-meal result card: title, description, prep time, macro chips, "por qué te sirve", and a Registrar CTA. */
 export function SuggestionOptionCard({ option, onRegister }: SuggestionOptionCardProps) {
-  const hasEstimatedItem = option.items.some((item) => item.source === 'ESTIMATED')
+  const hasEstimatedItem = option.dishes.some(
+    (dish) => dish.source === 'ESTIMATED' || dish.source === 'MIXED' || dish.ingredients.some((ingredient) => ingredient.source === 'ESTIMATED'),
+  )
 
   return (
     <Card className="space-y-3">

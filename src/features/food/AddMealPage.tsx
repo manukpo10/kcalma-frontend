@@ -11,9 +11,9 @@ import { compressImage } from './compressImage'
 import { DescribeMealStep } from './DescribeMealStep'
 import { mealTypeForNow } from './labels'
 import { ManualAddStep } from './ManualAddStep'
-import { computeTotals, sumTotals } from './nutritionMath'
+import { combineSources, computeDishTotals, per100FromTotals, round1, sumGrams, sumTotals } from './nutritionMath'
 import { ReviewStep, type DayPreview } from './ReviewStep'
-import type { AnalyzedItem, DraftItem, FoodEntryRequest, MealType } from './types'
+import type { AnalyzedDish, DraftDish, FoodEntryRequest, MealType } from './types'
 import { useAnalyzeDescription, useAnalyzePhoto, useSaveFoodEntries } from './useFoodEntries'
 
 type Step = 'choose' | 'analyzing' | 'review' | 'manual' | 'describe'
@@ -27,14 +27,26 @@ const STEP_TITLES: Record<Step, string> = {
 }
 
 /** Router state carried from "¿Qué como?" (see SuggestMealsPage) so its "Registrar" CTA can drop
- *  the user straight into the review step below, prefilled with that option's items. */
+ *  the user straight into the review step below, prefilled with that option's dishes. */
 interface SuggestionPrefill {
-  items: DraftItem[]
+  dishes: DraftDish[]
   mealType: MealType
 }
 
-function analyzedToDraft(item: AnalyzedItem): DraftItem {
-  return { key: crypto.randomUUID(), ...item, grams: Math.max(1, Math.round(item.grams)) }
+function analyzedDishToDraft(dish: AnalyzedDish): DraftDish {
+  const ingredients = dish.ingredients.map((ingredient) => ({
+    key: crypto.randomUUID(),
+    ...ingredient,
+    grams: Math.max(1, Math.round(ingredient.grams)),
+  }))
+  return {
+    key: crypto.randomUUID(),
+    name: dish.name,
+    grams: Math.max(1, Math.round(dish.grams)),
+    source: dish.source,
+    fdcId: dish.fdcId,
+    ingredients,
+  }
 }
 
 export function AddMealPage() {
@@ -47,7 +59,7 @@ export function AddMealPage() {
 
   const [step, setStep] = useState<Step>(prefill ? 'review' : 'choose')
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [items, setItems] = useState<DraftItem[]>(prefill?.items ?? [])
+  const [dishes, setDishes] = useState<DraftDish[]>(prefill?.dishes ?? [])
   const [mealType, setMealType] = useState<MealType>(() => prefill?.mealType ?? mealTypeForNow())
   const [note, setNote] = useState<string | null>(null)
   const [analyzeError, setAnalyzeError] = useState<string | null>(null)
@@ -81,7 +93,7 @@ export function AddMealPage() {
       const compressed = await compressImage(file)
       setPreviewUrl(URL.createObjectURL(compressed))
       const result = await analyzePhoto.mutateAsync(compressed)
-      setItems(result.items.map(analyzedToDraft))
+      setDishes(result.dishes.map(analyzedDishToDraft))
       setNote(result.note)
       setMealType(mealTypeForNow())
       setStep('review')
@@ -100,7 +112,7 @@ export function AddMealPage() {
     setStep('analyzing')
     try {
       const result = await analyzeDescription.mutateAsync(trimmed)
-      setItems(result.items.map(analyzedToDraft))
+      setDishes(result.dishes.map(analyzedDishToDraft))
       setNote(result.note)
       setMealType(mealTypeForNow())
       setDescription('')
@@ -111,30 +123,77 @@ export function AddMealPage() {
     }
   }
 
-  const handleChangeItem = (key: string, patch: Partial<DraftItem>) => {
-    setItems((current) => current.map((item) => (item.key === key ? { ...item, ...patch } : item)))
+  /** Scales every ingredient's grams by the same ratio as the dish's own — per-100g values are
+   *  invariant under uniform scaling, so only the grams (and totals derived from them) change. */
+  const handleChangeDishGrams = (dishKey: string, grams: number) => {
+    setDishes((current) =>
+      current.map((dish) => {
+        if (dish.key !== dishKey) return dish
+        const ratio = dish.grams > 0 ? grams / dish.grams : 1
+        return {
+          ...dish,
+          grams,
+          ingredients: dish.ingredients.map((ingredient) => ({ ...ingredient, grams: round1(ingredient.grams * ratio) })),
+        }
+      }),
+    )
   }
 
-  const handleRemoveItem = (key: string) => {
-    setItems((current) => current.filter((item) => item.key !== key))
+  const handleRemoveDish = (dishKey: string) => {
+    setDishes((current) => current.filter((dish) => dish.key !== dishKey))
+  }
+
+  /** The breakdown itself changed: the dish's own grams/source are re-derived FROM the ingredients
+   *  (sum of grams, combined source) — same rule the backend applies on a PATCH ingredients edit. */
+  const handleChangeIngredientGrams = (dishKey: string, ingredientKey: string, grams: number) => {
+    setDishes((current) =>
+      current.map((dish) => {
+        if (dish.key !== dishKey) return dish
+        const ingredients = dish.ingredients.map((ingredient) =>
+          ingredient.key === ingredientKey ? { ...ingredient, grams } : ingredient,
+        )
+        return { ...dish, ingredients, grams: sumGrams(ingredients), source: combineSources(ingredients.map((i) => i.source)) }
+      }),
+    )
+  }
+
+  const handleRemoveIngredient = (dishKey: string, ingredientKey: string) => {
+    setDishes((current) =>
+      current.map((dish) => {
+        if (dish.key !== dishKey) return dish
+        const ingredients = dish.ingredients.filter((ingredient) => ingredient.key !== ingredientKey)
+        return { ...dish, ingredients, grams: sumGrams(ingredients), source: combineSources(ingredients.map((i) => i.source)) }
+      }),
+    )
   }
 
   const handleSaveReview = async () => {
-    const entries: FoodEntryRequest[] = items.map((item) => ({
-      entryDate,
-      mealType,
-      name: item.name,
-      grams: item.grams,
-      kcalPer100: item.kcalPer100,
-      proteinPer100: item.proteinPer100,
-      fatPer100: item.fatPer100,
-      carbsPer100: item.carbsPer100,
-      fiberPer100: item.fiberPer100,
-      sugarPer100: item.sugarPer100,
-      sodiumMgPer100: item.sodiumMgPer100,
-      source: item.source,
-      fdcId: item.fdcId,
-    }))
+    const entries: FoodEntryRequest[] = dishes.map((dish) => {
+      const totals = computeDishTotals(dish.ingredients)
+      const per100 = per100FromTotals(totals, dish.grams)
+      return {
+        entryDate,
+        mealType,
+        name: dish.name,
+        grams: dish.grams,
+        ...per100,
+        source: dish.source,
+        fdcId: dish.fdcId,
+        ingredients: dish.ingredients.map((ingredient) => ({
+          name: ingredient.name,
+          grams: ingredient.grams,
+          kcalPer100: ingredient.kcalPer100,
+          proteinPer100: ingredient.proteinPer100,
+          fatPer100: ingredient.fatPer100,
+          carbsPer100: ingredient.carbsPer100,
+          fiberPer100: ingredient.fiberPer100,
+          sugarPer100: ingredient.sugarPer100,
+          sodiumMgPer100: ingredient.sodiumMgPer100,
+          source: ingredient.source,
+          fdcId: ingredient.fdcId,
+        })),
+      }
+    })
     await saveEntries.mutateAsync(entries)
     navigate('/', { replace: true })
   }
@@ -145,9 +204,9 @@ export function AddMealPage() {
   }
 
   const preview: DayPreview | null =
-    day && items.length > 0
+    day && dishes.length > 0
       ? (() => {
-          const draftTotals = sumTotals(items.map((item) => computeTotals(item, item.grams)))
+          const draftTotals = sumTotals(dishes.map((dish) => computeDishTotals(dish.ingredients)))
           return {
             newKcal: day.consumed.kcal + draftTotals.kcal,
             targetKcal: day.targets.calories,
@@ -249,9 +308,11 @@ export function AddMealPage() {
 
       {step === 'review' && (
         <ReviewStep
-          items={items}
-          onChangeItem={handleChangeItem}
-          onRemoveItem={handleRemoveItem}
+          dishes={dishes}
+          onChangeDishGrams={handleChangeDishGrams}
+          onRemoveDish={handleRemoveDish}
+          onChangeIngredientGrams={handleChangeIngredientGrams}
+          onRemoveIngredient={handleRemoveIngredient}
           mealType={mealType}
           onMealTypeChange={setMealType}
           note={note}

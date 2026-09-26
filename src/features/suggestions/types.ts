@@ -1,12 +1,12 @@
-import type { AnalyzedItem, MealType, Totals } from '../food/types'
+import type { AnalyzedDish, MealType, Totals } from '../food/types'
 
-/** One suggested meal — same item shape as a photo/text analysis result, plus totals the backend already computed. */
+/** One suggested meal — same dish/ingredient shape as a photo/text analysis result, plus totals the backend already computed. */
 export interface SuggestionOption {
   title: string
   description: string
   prepMinutes: number
   why: string
-  items: AnalyzedItem[]
+  dishes: AnalyzedDish[]
   totals: Totals
 }
 

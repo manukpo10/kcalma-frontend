@@ -13,6 +13,7 @@ const SOURCE_CONFIG: Partial<Record<FoodSource, SourceConfig>> = {
   PERSONAL: { label: 'Tu base', explanation: 'Valores guardados de tu biblioteca personal.', tone: 'neutral' },
   USDA: { label: 'USDA', explanation: 'Valores de USDA FoodData Central.', tone: 'neutral' },
   ESTIMATED: { label: 'Estimado', explanation: 'Valor estimado por IA, revisalo.', tone: 'amber' },
+  MIXED: { label: 'Mixto', explanation: 'Algunos valores estimados.', tone: 'amber' },
 }
 
 interface SourceBadgeProps {
@@ -22,8 +23,10 @@ interface SourceBadgeProps {
 
 /**
  * Small tappable badge disclosing where an item's nutrition values came from — "Tu base"/"USDA"
- * (neutral) or "Estimado" (amber). Tapping it shows a one-line explanation. Renders nothing for
- * MANUAL: those values are exactly what the person typed, so there's nothing to disclose.
+ * (neutral), or "Estimado"/"Mixto" (amber) when at least one value is an AI estimate (MIXED is
+ * dish-level only: its ingredients don't all share one source). Tapping it shows a one-line
+ * explanation. Renders nothing for MANUAL: those values are exactly what the person typed, so
+ * there's nothing to disclose.
  */
 export function SourceBadge({ source, className }: SourceBadgeProps) {
   const [open, setOpen] = useState(false)

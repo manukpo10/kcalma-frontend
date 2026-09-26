@@ -2,10 +2,11 @@ export type MealType = 'DESAYUNO' | 'ALMUERZO' | 'MERIENDA' | 'CENA' | 'SNACK'
 
 /**
  * Where a food item's nutrient values came from: PERSONAL (the user's own saved library), USDA
- * (matched USDA FoodData Central), ESTIMATED (no confident match — an AI estimate, revisable), or
- * MANUAL (typed by hand, never resolved against either table).
+ * (matched USDA FoodData Central), ESTIMATED (no confident match — an AI estimate, revisable),
+ * MANUAL (typed by hand, never resolved against either table), or MIXED — dish-level only: its
+ * ingredients don't all agree on where their values came from.
  */
-export type FoodSource = 'PERSONAL' | 'USDA' | 'ESTIMATED' | 'MANUAL'
+export type FoodSource = 'PERSONAL' | 'USDA' | 'ESTIMATED' | 'MANUAL' | 'MIXED'
 
 export interface Totals {
   kcal: number
@@ -17,7 +18,7 @@ export interface Totals {
   sodiumMg: number
 }
 
-/** Per-100g nutrition — the shape both a detected item and a manual entry are built from. */
+/** Per-100g nutrition — the shape both an ingredient and a manual entry are built from. */
 export interface Per100 {
   kcalPer100: number
   proteinPer100: number
@@ -28,6 +29,34 @@ export interface Per100 {
   sodiumMgPer100: number
 }
 
+/** One ingredient inside a dish, already resolved against the personal library/USDA reference. */
+export interface Ingredient extends Per100 {
+  name: string
+  grams: number
+  source: FoodSource
+  fdcId: number | null
+}
+
+/** One DISH detected/suggested, decomposed into ingredients — a simple food is just one ingredient
+ *  equal to the dish itself. `kcalPer100`..`sodiumMgPer100`/`totals` are the dish's OWN derived
+ *  values (sum of its ingredients), never a value of their own. */
+export interface AnalyzedDish extends Per100 {
+  name: string
+  grams: number
+  totals: Totals
+  source: FoodSource
+  fdcId: number | null
+  ingredients: Ingredient[]
+}
+
+export interface FoodAnalysisResponse {
+  dishes: AnalyzedDish[]
+  note: string | null
+}
+
+/** One saved entry's ingredient breakdown entry — same shape as `Ingredient`. */
+export type FoodEntryIngredient = Ingredient
+
 export interface FoodEntry extends Per100 {
   id: string
   entryDate: string
@@ -37,20 +66,17 @@ export interface FoodEntry extends Per100 {
   totals: Totals
   source: FoodSource
   fdcId: number | null
+  /** `null` for any entry logged before ingredient breakdowns shipped — never an empty array. */
+  ingredients: FoodEntryIngredient[] | null
   createdAt: string
   updatedAt: string
 }
 
-export interface AnalyzedItem extends Per100 {
+export interface FoodEntryIngredientRequest extends Per100 {
   name: string
   grams: number
   source: FoodSource
   fdcId: number | null
-}
-
-export interface FoodAnalysisResponse {
-  items: AnalyzedItem[]
-  note: string | null
 }
 
 export interface FoodEntryRequest extends Per100 {
@@ -60,18 +86,34 @@ export interface FoodEntryRequest extends Per100 {
   grams: number
   source: FoodSource
   fdcId: number | null
+  /** Optional: a request without a breakdown gets a single server-side ingredient equal to the dish. */
+  ingredients?: FoodEntryIngredientRequest[]
 }
 
 export interface UpdateFoodEntryRequest {
   grams: number
   mealType: MealType
+  /** Present only when the ingredients section itself was edited — see `EditEntryModal`. */
+  ingredients?: FoodEntryIngredientRequest[]
 }
 
-/** A detected or manually-added item while it's still being edited, before it's saved. */
-export interface DraftItem extends Per100 {
+/** A detected/suggested ingredient while it's still being edited, before it's saved. */
+export interface DraftIngredient extends Per100 {
   key: string
   name: string
   grams: number
   source: FoodSource
   fdcId: number | null
+}
+
+/** A detected/suggested/manual DISH while it's still being edited, before it's saved. `grams` and
+ *  `source` are kept in sync with `ingredients` (see `sumGrams`/`combineSources` in nutritionMath)
+ *  every time the breakdown itself changes, so a save always reflects the current ingredient set. */
+export interface DraftDish {
+  key: string
+  name: string
+  grams: number
+  source: FoodSource
+  fdcId: number | null
+  ingredients: DraftIngredient[]
 }

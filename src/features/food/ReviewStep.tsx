@@ -6,9 +6,10 @@ import { MacroChips } from '../../components/ui/MacroChips'
 import { SourceBadge } from '../../components/ui/SourceBadge'
 import { formatNumber } from '../../lib/format'
 import { GramsStepper } from './GramsStepper'
+import { IngredientsSection } from './IngredientsSection'
 import { MealTypePicker } from './MealTypePicker'
-import { computeTotals } from './nutritionMath'
-import type { DraftItem, MealType } from './types'
+import { computeDishTotals } from './nutritionMath'
+import type { DraftDish, MealType } from './types'
 
 export interface DayPreview {
   newKcal: number
@@ -20,9 +21,11 @@ export interface DayPreview {
 }
 
 interface ReviewStepProps {
-  items: DraftItem[]
-  onChangeItem: (key: string, patch: Partial<DraftItem>) => void
-  onRemoveItem: (key: string) => void
+  dishes: DraftDish[]
+  onChangeDishGrams: (key: string, grams: number) => void
+  onRemoveDish: (key: string) => void
+  onChangeIngredientGrams: (dishKey: string, ingredientKey: string, grams: number) => void
+  onRemoveIngredient: (dishKey: string, ingredientKey: string) => void
   mealType: MealType
   onMealTypeChange: (mealType: MealType) => void
   note: string | null
@@ -32,11 +35,13 @@ interface ReviewStepProps {
   saveError: string | null
 }
 
-/** Editable list of detected/added items, meal type, and a preview of how the day ends. */
+/** Editable list of detected/added DISHES, meal type, and a preview of how the day ends. */
 export function ReviewStep({
-  items,
-  onChangeItem,
-  onRemoveItem,
+  dishes,
+  onChangeDishGrams,
+  onRemoveDish,
+  onChangeIngredientGrams,
+  onRemoveIngredient,
   mealType,
   onMealTypeChange,
   note,
@@ -47,10 +52,10 @@ export function ReviewStep({
 }: ReviewStepProps) {
   return (
     <div className="space-y-5">
-      {note && items.length === 0 && <Banner tone="warning">{note}</Banner>}
-      {note && items.length > 0 && <Banner tone="info">{note}</Banner>}
+      {note && dishes.length === 0 && <Banner tone="warning">{note}</Banner>}
+      {note && dishes.length > 0 && <Banner tone="info">{note}</Banner>}
 
-      {items.length > 0 && (
+      {dishes.length > 0 && (
         <>
           <div>
             <p className="mb-2 text-sm font-medium text-ink">Comida</p>
@@ -58,29 +63,29 @@ export function ReviewStep({
           </div>
 
           <div className="space-y-3">
-            {items.map((item) => {
-              const totals = computeTotals(item, item.grams)
+            {dishes.map((dish) => {
+              const totals = computeDishTotals(dish.ingredients)
               return (
-                <Card key={item.key} className="space-y-3">
+                <Card key={dish.key} className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-semibold text-ink capitalize">
-                      {item.name} <SourceBadge source={item.source} className="ml-1" />
+                      {dish.name} <SourceBadge source={dish.source} className="ml-1" />
                     </p>
                     <button
                       type="button"
-                      onClick={() => onRemoveItem(item.key)}
-                      aria-label={`Quitar ${item.name}`}
+                      onClick={() => onRemoveDish(dish.key)}
+                      aria-label={`Quitar ${dish.name}`}
                       className="text-ink-muted transition-colors hover:text-danger"
                     >
                       <X className="size-5" aria-hidden="true" />
                     </button>
                   </div>
-                  <GramsStepper value={item.grams} onChange={(grams) => onChangeItem(item.key, { grams })} />
-                  <MacroChips
-                    kcal={totals.kcal}
-                    protein={totals.protein}
-                    fat={totals.fat}
-                    carbs={totals.carbs}
+                  <GramsStepper value={dish.grams} onChange={(grams) => onChangeDishGrams(dish.key, grams)} />
+                  <MacroChips kcal={totals.kcal} protein={totals.protein} fat={totals.fat} carbs={totals.carbs} />
+                  <IngredientsSection
+                    ingredients={dish.ingredients}
+                    onChangeGrams={(ingredientKey, grams) => onChangeIngredientGrams(dish.key, ingredientKey, grams)}
+                    onRemove={(ingredientKey) => onRemoveIngredient(dish.key, ingredientKey)}
                   />
                 </Card>
               )

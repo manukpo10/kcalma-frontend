@@ -217,7 +217,10 @@ export function TodayPage() {
                       >
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-medium text-ink capitalize">{entry.name}</span>
-                          <span className="text-xs text-ink-muted">{formatNumber(entry.grams)} g</span>
+                          <span className="block text-xs text-ink-muted">{formatNumber(entry.grams)} g</span>
+                          {entry.ingredients && entry.ingredients.length > 1 && (
+                            <span className="block text-[11px] text-ink-muted/60">{entry.ingredients.length} ingredientes</span>
+                          )}
                         </span>
                         <span className="ml-3 shrink-0 font-semibold text-ink">
                           {formatNumber(entry.totals.kcal)} kcal

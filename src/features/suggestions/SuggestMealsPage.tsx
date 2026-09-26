@@ -9,7 +9,7 @@ import { Skeleton } from '../../components/ui/Skeleton'
 import { TAB_BAR_CLEARANCE_CLASS } from '../../components/BottomTabBar'
 import { todayIso } from '../../lib/date'
 import { cn } from '../../lib/cn'
-import type { AnalyzedItem, DraftItem, MealType } from '../food/types'
+import type { AnalyzedDish, DraftDish, MealType } from '../food/types'
 import { mealTypeForNow } from '../food/labels'
 import { MealTypePicker } from '../food/MealTypePicker'
 import { SuggestionOptionCard } from './SuggestionOptionCard'
@@ -21,8 +21,19 @@ const PREFERENCES_PLACEHOLDER = 'Ej: algo rápido, tengo pollo y arroz, sin carn
 
 type Step = 'form' | 'loading' | 'results'
 
-function toDraftItems(items: AnalyzedItem[]): DraftItem[] {
-  return items.map((item) => ({ key: crypto.randomUUID(), ...item, grams: Math.max(1, Math.round(item.grams)) }))
+function toDraftDishes(dishes: AnalyzedDish[]): DraftDish[] {
+  return dishes.map((dish) => ({
+    key: crypto.randomUUID(),
+    name: dish.name,
+    grams: Math.max(1, Math.round(dish.grams)),
+    source: dish.source,
+    fdcId: dish.fdcId,
+    ingredients: dish.ingredients.map((ingredient) => ({
+      key: crypto.randomUUID(),
+      ...ingredient,
+      grams: Math.max(1, Math.round(ingredient.grams)),
+    })),
+  }))
 }
 
 /**
@@ -60,7 +71,7 @@ export function SuggestMealsPage() {
   }
 
   const handleRegister = (option: SuggestionOption) => {
-    navigate('/agregar', { state: { prefill: { items: toDraftItems(option.items), mealType } } })
+    navigate('/agregar', { state: { prefill: { dishes: toDraftDishes(option.dishes), mealType } } })
   }
 
   // This page is a tab now: the tab bar handles leaving it, the back arrow only steps back from the results.
