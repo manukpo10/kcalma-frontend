@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Banner } from '../../components/ui/Banner'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
+import { Sheet } from '../../components/ui/Sheet'
 import { todayIso } from '../../lib/date'
 import { useUpsertWeight } from './useProgress'
 
@@ -42,52 +43,41 @@ export function RegisterWeightSheet({ onClose, onSaved }: RegisterWeightSheetPro
   const error = validationError ?? (upsertWeight.error instanceof Error ? upsertWeight.error.message : null)
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Registrar peso"
-      className="fixed inset-0 z-30 flex items-end justify-center bg-black/60 sm:items-center"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md rounded-t-2xl bg-surface p-5 pb-[max(env(safe-area-inset-bottom),1.25rem)] shadow-lg sm:rounded-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <p className="mb-5 flex items-center gap-2 text-lg font-bold text-ink">
-          <Scale className="size-5 text-primary-400" aria-hidden="true" />
-          Registrar peso
-        </p>
+    <Sheet onClose={onClose} ariaLabel="Registrar peso">
+      <p className="mb-5 flex items-center gap-2 text-lg font-bold text-ink">
+        <Scale className="size-5 text-primary-400" aria-hidden="true" />
+        Registrar peso
+      </p>
 
-        <div className="mb-4">
-          <Input label="Fecha" type="date" max={todayIso()} value={date} onChange={(event) => setDate(event.target.value)} />
-        </div>
-
-        <div className="mb-5">
-          <Input
-            label="Peso"
-            type="text"
-            inputMode="decimal"
-            placeholder="70,0"
-            autoFocus
-            trailing={<span className="text-sm font-medium text-ink-muted">kg</span>}
-            value={weight}
-            onChange={(event) => setWeight(event.target.value)}
-          />
-        </div>
-
-        {error && (
-          <Banner tone="danger" className="mb-4">
-            {error}
-          </Banner>
-        )}
-
-        <Button loading={upsertWeight.isPending} onClick={() => void handleSave()}>
-          Guardar
-        </Button>
-        <Button variant="ghost" className="mt-2" onClick={onClose}>
-          Cancelar
-        </Button>
+      <div className="mb-4">
+        <Input label="Fecha" type="date" max={todayIso()} value={date} onChange={(event) => setDate(event.target.value)} />
       </div>
-    </div>
+
+      <div className="mb-5">
+        <Input
+          label="Peso"
+          type="text"
+          inputMode="decimal"
+          placeholder="70,0"
+          autoFocus
+          trailing={<span className="text-sm font-medium text-ink-muted">kg</span>}
+          value={weight}
+          onChange={(event) => setWeight(event.target.value)}
+        />
+      </div>
+
+      {error && (
+        <Banner tone="danger" className="mb-4">
+          {error}
+        </Banner>
+      )}
+
+      <Button loading={upsertWeight.isPending} onClick={() => void handleSave()}>
+        Guardar
+      </Button>
+      <Button variant="ghost" className="mt-2" onClick={onClose}>
+        Cancelar
+      </Button>
+    </Sheet>
   )
 }

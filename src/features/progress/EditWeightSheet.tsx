@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Banner } from '../../components/ui/Banner'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
+import { Sheet } from '../../components/ui/Sheet'
 import { formatLongDate } from '../../lib/date'
 import type { WeightPoint } from './types'
 import { useDeleteWeight, useUpsertWeight } from './useProgress'
@@ -55,59 +56,48 @@ export function EditWeightSheet({ point, onClose, onSaved }: EditWeightSheetProp
         : null)
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Editar peso del ${formatLongDate(point.date)}`}
-      className="fixed inset-0 z-30 flex items-end justify-center bg-black/60 sm:items-center"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md rounded-t-2xl bg-surface p-5 pb-[max(env(safe-area-inset-bottom),1.25rem)] shadow-lg sm:rounded-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <p className="mb-1 text-lg font-bold text-ink capitalize">{formatLongDate(point.date)}</p>
-        <p className="mb-5 text-sm text-ink-muted">Editá el peso registrado ese día o eliminá el registro.</p>
+    <Sheet onClose={onClose} ariaLabel={`Editar peso del ${formatLongDate(point.date)}`}>
+      <p className="mb-1 text-lg font-bold text-ink capitalize">{formatLongDate(point.date)}</p>
+      <p className="mb-5 text-sm text-ink-muted">Editá el peso registrado ese día o eliminá el registro.</p>
 
-        <div className="mb-5">
-          <Input
-            label="Peso"
-            type="text"
-            inputMode="decimal"
-            autoFocus
-            trailing={<span className="text-sm font-medium text-ink-muted">kg</span>}
-            value={weight}
-            onChange={(event) => setWeight(event.target.value)}
-          />
-        </div>
-
-        {error && (
-          <Banner tone="danger" className="mb-4">
-            {error}
-          </Banner>
-        )}
-
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <Button
-              variant="danger"
-              icon={<Trash2 className="size-5" aria-hidden="true" />}
-              loading={deleteWeight.isPending}
-              onClick={() => void handleDelete()}
-            >
-              Eliminar
-            </Button>
-          </div>
-          <div className="flex-1">
-            <Button loading={upsertWeight.isPending} onClick={() => void handleSave()}>
-              Guardar
-            </Button>
-          </div>
-        </div>
-        <Button variant="ghost" className="mt-2" onClick={onClose}>
-          Cancelar
-        </Button>
+      <div className="mb-5">
+        <Input
+          label="Peso"
+          type="text"
+          inputMode="decimal"
+          autoFocus
+          trailing={<span className="text-sm font-medium text-ink-muted">kg</span>}
+          value={weight}
+          onChange={(event) => setWeight(event.target.value)}
+        />
       </div>
-    </div>
+
+      {error && (
+        <Banner tone="danger" className="mb-4">
+          {error}
+        </Banner>
+      )}
+
+      <div className="flex gap-3">
+        <div className="flex-1">
+          <Button
+            variant="danger"
+            icon={<Trash2 className="size-5" aria-hidden="true" />}
+            loading={deleteWeight.isPending}
+            onClick={() => void handleDelete()}
+          >
+            Eliminar
+          </Button>
+        </div>
+        <div className="flex-1">
+          <Button loading={upsertWeight.isPending} onClick={() => void handleSave()}>
+            Guardar
+          </Button>
+        </div>
+      </div>
+      <Button variant="ghost" className="mt-2" onClick={onClose}>
+        Cancelar
+      </Button>
+    </Sheet>
   )
 }
