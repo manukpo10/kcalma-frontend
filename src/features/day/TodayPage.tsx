@@ -1,4 +1,4 @@
-import { Candy, ChevronLeft, ChevronRight, Drumstick, Droplet, Gauge, Leaf, Pencil, Sparkles, Trash2, Wheat } from 'lucide-react'
+import { Candy, ChevronLeft, ChevronRight, Drumstick, Droplet, Gauge, Leaf, Pencil, Repeat2, Sparkles, Trash2, Wheat } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Banner } from '../../components/ui/Banner'
@@ -7,14 +7,17 @@ import { ProgressRing } from '../../components/ui/ProgressRing'
 import { Screen } from '../../components/ui/Screen'
 import { Skeleton } from '../../components/ui/Skeleton'
 import { StatTile } from '../../components/ui/StatTile'
+import { useToast } from '../../components/ui/ToastProvider'
 import { TAB_BAR_CLEARANCE_CLASS } from '../../components/BottomTabBar'
 import { addDays, formatDayLabel, todayIso } from '../../lib/date'
 import { formatNumber } from '../../lib/format'
 import { MEAL_TYPE_LABELS, MEAL_TYPE_ORDER } from '../food/labels'
 import type { FoodEntry, MealType } from '../food/types'
+import { useCopyMeal, useDeleteMeal } from '../food/useFoodEntries'
 import { DeleteMealModal } from './DeleteMealModal'
 import { EditEntryModal } from './EditEntryModal'
 import { useDay } from './useDay'
+import { WaterCard } from './WaterCard'
 
 interface DeletingMeal {
   mealType: MealType
@@ -34,6 +37,38 @@ export function TodayPage() {
 
   const isToday = date === todayIso()
   const allMealsEmpty = data ? MEAL_TYPE_ORDER.every((mealType) => (data.meals[mealType] ?? []).length === 0) : false
+
+  // "Repetir {comida} de ayer": only meaningful while looking at today, so yesterday's day is
+  // only fetched then — see useDay's `enabled` option.
+  const yesterday = addDays(todayIso(), -1)
+  const { data: yesterdayData } = useDay(yesterday, { enabled: isToday })
+  const copyMeal = useCopyMeal()
+  const deleteMeal = useDeleteMeal()
+  const { showToast } = useToast()
+  const [repeatError, setRepeatError] = useState<string | null>(null)
+
+  const isMealRepeatable = (mealType: MealType) =>
+    isToday &&
+    Boolean(data) &&
+    Boolean(yesterdayData) &&
+    (data?.meals[mealType] ?? []).length === 0 &&
+    (yesterdayData?.meals[mealType] ?? []).length > 0
+
+  const handleRepeatMeal = async (mealType: MealType) => {
+    setRepeatError(null)
+    try {
+      await copyMeal.mutateAsync({ fromDate: yesterday, toDate: date, mealType })
+      showToast({
+        message: `Repetiste ${MEAL_TYPE_LABELS[mealType].toLowerCase()} de ayer · Deshacer`,
+        actionLabel: 'Deshacer',
+        onAction: async () => {
+          await deleteMeal.mutateAsync({ date, mealType })
+        },
+      })
+    } catch (error) {
+      setRepeatError(error instanceof Error ? error.message : 'No se pudo repetir la comida.')
+    }
+  }
 
   // iOS suspends an installed PWA in the background instead of reloading it, so without this,
   // "Hoy" can silently keep showing yesterday (or stale totals) for as long as the app stays
@@ -233,6 +268,10 @@ export function TodayPage() {
             />
           </div>
 
+          <WaterCard date={date} water={data.water} />
+
+          {repeatError && <Banner tone="danger" className="mb-4">{repeatError}</Banner>}
+
           <div className="space-y-5">
             {!allMealsEmpty && (
               <p className="flex items-center gap-1.5 text-xs text-ink-muted">
@@ -242,7 +281,21 @@ export function TodayPage() {
             )}
             {MEAL_TYPE_ORDER.map((mealType) => {
               const entries = data.meals[mealType] ?? []
-              if (entries.length === 0) return null
+              if (entries.length === 0) {
+                if (!isMealRepeatable(mealType)) return null
+                return (
+                  <button
+                    key={mealType}
+                    type="button"
+                    onClick={() => void handleRepeatMeal(mealType)}
+                    disabled={copyMeal.isPending}
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-dashed border-hairline text-sm font-semibold text-primary-300 transition-colors hover:bg-surface-2 active:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Repeat2 className="size-4" aria-hidden="true" />
+                    Repetir {MEAL_TYPE_LABELS[mealType].toLowerCase()} de ayer
+                  </button>
+                )
+              }
               return (
                 <div key={mealType}>
                   <div className="mb-2 flex items-center justify-between">
