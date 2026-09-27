@@ -14,4 +14,7 @@ export const env = {
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
   ),
   apiUrl: import.meta.env.VITE_API_URL ?? 'http://localhost:8080',
+  // Optional: Cloudflare Turnstile site key. Unset in every environment until configured —
+  // every auth form treats its absence as "no captcha" and changes nothing (see TurnstileWidget).
+  turnstileSiteKey: import.meta.env.VITE_TURNSTILE_SITE_KEY,
 }
