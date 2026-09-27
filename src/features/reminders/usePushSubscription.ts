@@ -19,10 +19,24 @@ export function usePushSubscribe() {
     mutationFn: async () => {
       const registration = await navigator.serviceWorker.ready
       const publicKey = await fetchPublicKey()
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey),
-      })
+      const applicationServerKey = urlBase64ToUint8Array(publicKey)
+      const subscribe = () => registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey })
+
+      let subscription: PushSubscription
+      try {
+        subscription = await subscribe()
+      } catch (error) {
+        // `InvalidStateError` means a subscription made with a different applicationServerKey
+        // already exists — e.g. the backend's VAPID key rotated since this device last
+        // subscribed. The browser refuses to layer a new key on top of it, so drop the stale
+        // subscription and retry once with the current key. Any other error is a real failure.
+        const isStaleKey = error instanceof DOMException && error.name === 'InvalidStateError'
+        if (!isStaleKey) throw error
+
+        const stale = await registration.pushManager.getSubscription()
+        await stale?.unsubscribe()
+        subscription = await subscribe()
+      }
 
       const body: PushSubscriptionRequest = { ...subscription.toJSON(), userAgent: navigator.userAgent }
       await apiFetch('/api/push/subscriptions', { method: 'POST', body: JSON.stringify(body) })
