@@ -1,4 +1,4 @@
-import { Candy, Droplet, Droplets, Drumstick, Flame, Gauge, LogOut, Pencil, Wheat } from 'lucide-react'
+import { Candy, Droplet, Droplets, Drumstick, Flame, Gauge, LogOut, Pencil, Target, Wheat } from 'lucide-react'
 import { useNavigate } from 'react-router'
 import { Banner } from '../../components/ui/Banner'
 import { BrandMark } from '../../components/ui/BrandMark'
@@ -8,9 +8,20 @@ import { Screen } from '../../components/ui/Screen'
 import { StatTile } from '../../components/ui/StatTile'
 import { TAB_BAR_CLEARANCE_CLASS } from '../../components/BottomTabBar'
 import { LoadingScreen } from '../../components/LoadingScreen'
-import { formatNumber } from '../../lib/format'
+import { formatNumber, formatSignedWeight } from '../../lib/format'
 import { supabase } from '../../lib/supabase'
-import { ACTIVITY_LABELS, SEX_LABELS } from './labels'
+import {
+  ACTIVITY_LABELS,
+  DIETARY_RESTRICTION_LABELS,
+  DIET_STYLE_LABELS,
+  GOAL_LABELS,
+  PACE_LABELS,
+  SEX_LABELS,
+  dailyAdjustmentMessage,
+  needsPace,
+  noteTone,
+  proteinBasisMessage,
+} from './labels'
 import { useProfile } from './useProfile'
 
 /** Profile summary + daily targets (read-only reference) + edit profile + log out. */
@@ -34,18 +45,37 @@ export function ProfilePage() {
 
   const { profile, targets } = data
 
+  // "Perder grasa · Moderado (-0,85 kg/sem) · Alta en proteína · Vegetariana"
+  const planParts = [GOAL_LABELS[profile.goal].title]
+  if (needsPace(profile.goal) && profile.pace) {
+    planParts.push(`${PACE_LABELS[profile.pace]} (${formatSignedWeight(targets.weeklyRateKg)} kg/sem)`)
+  }
+  planParts.push(DIET_STYLE_LABELS[profile.dietStyle].title)
+  if (profile.dietaryRestrictions.length > 0) {
+    planParts.push(profile.dietaryRestrictions.map((restriction) => DIETARY_RESTRICTION_LABELS[restriction]).join(', '))
+  }
+  const notes = targets.notes ?? []
+
   return (
     <Screen title="Perfil" icon={<BrandMark size="sm" className="mr-1" />}>
       <p className="mb-5 text-sm text-ink-muted">
         {SEX_LABELS[profile.sex]} · {ACTIVITY_LABELS[profile.activityLevel].title}
       </p>
 
-      {targets.floorApplied && (
-        <Banner tone="info" className="mb-5">
-          El objetivo calculado estaba por debajo de un mínimo seguro, por lo que se ajustó a un piso
-          seguro.
+      <Card className="mb-5">
+        <p className="mb-2 flex items-center gap-2 text-xs font-semibold tracking-wide text-ink-muted uppercase">
+          <Target className="size-4" aria-hidden="true" />
+          Tu plan
+        </p>
+        <p className="text-base font-semibold text-ink">{planParts.join(' · ')}</p>
+        <p className="mt-1.5 text-sm text-ink-muted">{dailyAdjustmentMessage(targets.dailyAdjustmentKcal)}</p>
+      </Card>
+
+      {notes.map((note) => (
+        <Banner key={note.code} tone={noteTone(note.code)} className="mb-5">
+          {note.message}
         </Banner>
-      )}
+      ))}
 
       <Card className="mb-6">
         <p className="mb-3 flex items-center gap-2 text-xs font-semibold tracking-wide text-ink-muted uppercase">
@@ -82,6 +112,8 @@ export function ProfilePage() {
             tint="var(--color-carbs-tint)"
           />
         </div>
+
+        <p className="mb-3 text-xs text-ink-muted">{proteinBasisMessage(targets.proteinBasis, targets.proteinBasisKg)}</p>
 
         <div className="grid grid-cols-2 gap-3">
           <StatTile
