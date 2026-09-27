@@ -1,6 +1,19 @@
-import { Candy, Download, Droplet, Droplets, Drumstick, Flame, Gauge, LogOut, Pencil, Target, Wheat } from 'lucide-react'
+import {
+  Candy,
+  Download,
+  Droplet,
+  Droplets,
+  Drumstick,
+  Flame,
+  Gauge,
+  LogOut,
+  Pencil,
+  Target,
+  Trash2,
+  Wheat,
+} from 'lucide-react'
 import { Suspense, lazy, useState } from 'react'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { Banner } from '../../components/ui/Banner'
 import { BrandMark } from '../../components/ui/BrandMark'
 import { Button } from '../../components/ui/Button'
@@ -9,8 +22,9 @@ import { Screen } from '../../components/ui/Screen'
 import { StatTile } from '../../components/ui/StatTile'
 import { TAB_BAR_CLEARANCE_CLASS } from '../../components/BottomTabBar'
 import { LoadingScreen } from '../../components/LoadingScreen'
+import { useSignOut } from '../auth/useSignOut'
 import { formatNumber, formatSignedWeight } from '../../lib/format'
-import { supabase } from '../../lib/supabase'
+import { DeleteAccountSheet } from './DeleteAccountSheet'
 import { ExportDataSheet } from './ExportDataSheet'
 import {
   ACTIVITY_LABELS,
@@ -37,7 +51,9 @@ const RemindersSection = lazy(() =>
 export function ProfilePage() {
   const navigate = useNavigate()
   const { data, isPending, error } = useProfile()
+  const signOut = useSignOut()
   const [exporting, setExporting] = useState(false)
+  const [deletingAccount, setDeletingAccount] = useState(false)
 
   if (isPending) {
     return <LoadingScreen />
@@ -176,17 +192,32 @@ export function ProfilePage() {
         <Button
           variant="ghost"
           icon={<LogOut className="size-5" aria-hidden="true" />}
-          onClick={() => void supabase.auth.signOut()}
+          onClick={() => void signOut()}
         >
           Cerrar sesión
         </Button>
       </div>
 
+      <div className="mt-8 border-t border-hairline pt-5">
+        <p className="mb-3 text-xs font-semibold tracking-wide text-danger uppercase">Zona de riesgo</p>
+        <Button
+          variant="danger"
+          icon={<Trash2 className="size-5" aria-hidden="true" />}
+          onClick={() => setDeletingAccount(true)}
+        >
+          Eliminar mi cuenta
+        </Button>
+      </div>
+
       <p className="mt-6 text-center text-xs text-ink-muted">Datos nutricionales: USDA FoodData Central</p>
+      <Link to="/privacidad" className="mt-1 block text-center text-xs text-ink-muted underline">
+        Política de privacidad
+      </Link>
 
       <div aria-hidden="true" className={TAB_BAR_CLEARANCE_CLASS} />
 
       {exporting && <ExportDataSheet onClose={() => setExporting(false)} />}
+      {deletingAccount && <DeleteAccountSheet onClose={() => setDeletingAccount(false)} />}
     </Screen>
   )
 }
