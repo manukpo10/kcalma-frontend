@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { ageInYears } from '../../lib/date'
 import { needsPace } from './labels'
 import type { DietaryRestriction, DietStyle, Goal, Pace } from './types'
 
@@ -33,7 +34,15 @@ const DIETARY_RESTRICTION_VALUES = [
 export const onboardingSchema = z
   .object({
     sex: z.enum(['MALE', 'FEMALE']),
-    birthDate: z.string().min(1, 'La fecha de nacimiento es obligatoria'),
+    // Mirrors the backend's own 18-100 age gate (see ProfileRequest) so the client rejects the
+    // same values before a round trip — message text must stay byte-for-byte identical to the
+    // server's, since we show whichever one the user hits first.
+    birthDate: z
+      .string()
+      .min(1, 'La fecha de nacimiento es obligatoria')
+      .refine((value) => ageInYears(value) >= 18 && ageInYears(value) <= 100, {
+        message: 'Kcalma es para personas de entre 18 y 100 años.',
+      }),
     heightCm: z
       .string()
       .min(1, 'La altura es obligatoria')

@@ -37,6 +37,26 @@ export function addDays(iso: string, delta: number): string {
   return toIso(date)
 }
 
+/** Today's date shifted back by whole calendar years, as `YYYY-MM-DD` — used as an `<input
+ *  type="date">` `min`/`max` for age gates (e.g. today minus 18 years as the birth-date `max`, so
+ *  the picker itself can't select someone younger than 18). Mirrors `ageInYears`'s boundary. */
+export function isoYearsAgo(years: number): string {
+  const today = new Date()
+  today.setFullYear(today.getFullYear() - years)
+  return toIso(today)
+}
+
+/** Whole years of age for a `YYYY-MM-DD` birth date, as of today (local time) — the same
+ *  "hasn't had this year's birthday yet" logic a person uses when counting age. Backs the
+ *  onboarding/profile 18-100 age gate, which mirrors a check the backend also enforces. */
+export function ageInYears(birthDateIso: string): number {
+  const [year, month, day] = birthDateIso.split('-').map(Number)
+  const today = new Date()
+  const hadBirthdayThisYear =
+    today.getMonth() + 1 > month || (today.getMonth() + 1 === month && today.getDate() >= day)
+  return today.getFullYear() - year - (hadBirthdayThisYear ? 0 : 1)
+}
+
 const WEEKDAY_FORMATTER = new Intl.DateTimeFormat('es-AR', {
   weekday: 'short',
   day: 'numeric',
