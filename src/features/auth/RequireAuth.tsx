@@ -4,13 +4,15 @@ import { LoadingScreen } from '../../components/LoadingScreen'
 import { useAuth } from './AuthProvider'
 
 export function RequireAuth({ children }: { children: ReactNode }) {
-  const { session, loading } = useAuth()
+  const { session, loading, isPasswordRecovery } = useAuth()
 
   if (loading) {
     return <LoadingScreen />
   }
 
-  if (!session) {
+  // A password-recovery session only unlocks /restablecer, never the rest of the app — see
+  // AuthProvider's `isPasswordRecovery` doc comment.
+  if (!session || isPasswordRecovery) {
     return <Navigate to="/login" replace />
   }
 
