@@ -1,6 +1,6 @@
 import { Camera, ImagePlus, LoaderCircle, PenLine } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router'
+import { useLocation, useNavigate, useSearchParams } from 'react-router'
 import { Banner } from '../../components/ui/Banner'
 import { Button } from '../../components/ui/Button'
 import { Screen } from '../../components/ui/Screen'
@@ -9,7 +9,7 @@ import { todayIso } from '../../lib/date'
 import { useDay } from '../day/useDay'
 import { compressImage } from './compressImage'
 import { DescribeMealStep } from './DescribeMealStep'
-import { mealTypeForNow } from './labels'
+import { MEAL_TYPE_ORDER, mealTypeForNow } from './labels'
 import { ManualAddStep } from './ManualAddStep'
 import { analyzedDishToDraft, combineSources, computeDishTotals, per100FromTotals, round1, sumGrams, sumTotals } from './nutritionMath'
 import { RecentFavoritesPicker } from './RecentFavoritesPicker'
@@ -34,18 +34,32 @@ interface SuggestionPrefill {
   mealType: MealType
 }
 
+/** `/agregar?meal=ALMUERZO` — a reminder notification's deep link (see src/sw.ts's
+ *  `notificationclick`) preselects that meal instead of whatever `mealTypeForNow()` would guess.
+ *  `null` for anything missing/invalid, so a bad or absent query param just falls through to the
+ *  existing time-of-day default. */
+function parseMealTypeParam(value: string | null): MealType | null {
+  return value && (MEAL_TYPE_ORDER as string[]).includes(value) ? (value as MealType) : null
+}
+
 export function AddMealPage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const entryDate = todayIso()
   const { data: day } = useDay(entryDate)
 
   const prefill = (location.state as { prefill?: SuggestionPrefill } | null)?.prefill ?? null
+  const deepLinkMealType = parseMealTypeParam(searchParams.get('meal'))
+  // Stays the session's default meal type end to end (initial step, post-analysis, quick-pick
+  // fallback) instead of only seeding the very first render — otherwise a slow photo analysis
+  // that crosses an hour boundary would silently overwrite the meal the reminder was actually for.
+  const defaultMealType = () => deepLinkMealType ?? mealTypeForNow()
 
   const [step, setStep] = useState<Step>(prefill ? 'review' : 'choose')
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [dishes, setDishes] = useState<DraftDish[]>(prefill?.dishes ?? [])
-  const [mealType, setMealType] = useState<MealType>(() => prefill?.mealType ?? mealTypeForNow())
+  const [mealType, setMealType] = useState<MealType>(() => prefill?.mealType ?? defaultMealType())
   const [note, setNote] = useState<string | null>(null)
   const [analyzeError, setAnalyzeError] = useState<string | null>(null)
   const [analyzeKind, setAnalyzeKind] = useState<'photo' | 'text'>('photo')
@@ -80,7 +94,7 @@ export function AddMealPage() {
       const result = await analyzePhoto.mutateAsync(compressed)
       setDishes(result.dishes.map(analyzedDishToDraft))
       setNote(result.note)
-      setMealType(mealTypeForNow())
+      setMealType(defaultMealType())
       setStep('review')
     } catch (error) {
       setAnalyzeError(error instanceof Error ? error.message : 'No se pudo analizar la foto.')
@@ -99,7 +113,7 @@ export function AddMealPage() {
       const result = await analyzeDescription.mutateAsync(trimmed)
       setDishes(result.dishes.map(analyzedDishToDraft))
       setNote(result.note)
-      setMealType(mealTypeForNow())
+      setMealType(defaultMealType())
       setDescription('')
       setStep('review')
     } catch (error) {
@@ -193,7 +207,7 @@ export function AddMealPage() {
   const handleSelectQuickDish = (dish: AnalyzedDish, dishMealType: MealType | null) => {
     setDishes([analyzedDishToDraft(dish)])
     setNote(null)
-    setMealType(dishMealType ?? mealTypeForNow())
+    setMealType(dishMealType ?? defaultMealType())
     setStep('review')
   }
 
