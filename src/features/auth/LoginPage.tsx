@@ -64,7 +64,13 @@ export function LoginPage() {
   const handleResend = async () => {
     setResending(true)
     try {
-      const { error } = await supabase.auth.resend({ type: 'signup', email: getValues('email') })
+      // Supabase's captcha protection covers resend too, so it needs its own single-use token.
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: getValues('email'),
+        options: { captchaToken: captchaToken ?? undefined, emailRedirectTo: `${window.location.origin}/` },
+      })
+      resetCaptcha()
       if (error) {
         setAuthError(mapAuthError(error))
         return
@@ -110,7 +116,12 @@ export function LoginPage() {
         {authError && <Banner tone="danger">{authError}</Banner>}
 
         {emailNotConfirmed && (
-          <Button variant="secondary" loading={resending} onClick={() => void handleResend()}>
+          <Button
+            variant="secondary"
+            loading={resending}
+            disabled={Boolean(env.turnstileSiteKey) && !captchaToken}
+            onClick={() => void handleResend()}
+          >
             Reenviar mail de confirmación
           </Button>
         )}
