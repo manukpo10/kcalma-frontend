@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { PasswordInput } from '../../components/ui/PasswordInput'
 import { useToast } from '../../components/ui/ToastProvider'
+import { cn } from '../../lib/cn'
 import { env } from '../../lib/env'
 import { supabase } from '../../lib/supabase'
 import { AuthLayout } from './AuthLayout'
@@ -131,10 +132,12 @@ export function LoginPage() {
         </Button>
       </form>
 
-      <div className="mt-6 flex items-center justify-between text-sm">
-        <Link to="/registro" className="font-semibold text-primary-400 hover:text-primary-300">
-          Crear cuenta
-        </Link>
+      <div className={cn('mt-6 flex items-center text-sm', env.signupsEnabled ? 'justify-between' : 'justify-center')}>
+        {env.signupsEnabled && (
+          <Link to="/registro" className="font-semibold text-primary-400 hover:text-primary-300">
+            Crear cuenta
+          </Link>
+        )}
         <Link to="/recuperar" className="font-semibold text-primary-400 hover:text-primary-300">
           ¿Olvidaste tu contraseña?
         </Link>

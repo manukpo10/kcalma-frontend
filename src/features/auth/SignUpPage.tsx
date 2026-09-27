@@ -37,6 +37,21 @@ export function SignUpPage() {
     return <Navigate to="/" replace />
   }
 
+  // Kcalma runs by invitation — public registration is closed unless VITE_SIGNUPS_ENABLED=true.
+  if (!env.signupsEnabled) {
+    return (
+      <AuthLayout heading="Registro cerrado" tagline="Kcalma funciona por invitación">
+        <Banner tone="info">El registro está cerrado. Pedile una invitación a quien administra Kcalma.</Banner>
+        <Link
+          to="/login"
+          className="mt-6 block text-center text-sm font-semibold text-primary-400 hover:text-primary-300"
+        >
+          Iniciar sesión
+        </Link>
+      </AuthLayout>
+    )
+  }
+
   const onSubmit = async (values: SignUpFormValues) => {
     setAuthError(null)
     const { error } = await supabase.auth.signUp({

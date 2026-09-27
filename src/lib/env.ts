@@ -17,4 +17,8 @@ export const env = {
   // Optional: Cloudflare Turnstile site key. Unset in every environment until configured —
   // every auth form treats its absence as "no captcha" and changes nothing (see TurnstileWidget).
   turnstileSiteKey: import.meta.env.VITE_TURNSTILE_SITE_KEY,
+  // Kcalma runs by invitation (the admin invites from the Supabase dashboard) — public
+  // registration is closed unless this is explicitly set to the string "true". LoginPage hides
+  // "Crear cuenta" and SignUpPage shows a closed-registration message while this is false.
+  signupsEnabled: import.meta.env.VITE_SIGNUPS_ENABLED === 'true',
 }
