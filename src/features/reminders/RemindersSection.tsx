@@ -286,12 +286,14 @@ function RemindersContent({ data }: RemindersContentProps) {
 }
 
 function RemindersLoader() {
-  const { data, isPending, isError } = useReminderSettings()
+  const { data, isPending } = useReminderSettings()
 
   // CRITICAL: the backend for this sprint deploys independently. Until its /api/reminders and
-  // /api/push/* routes exist, this 404/405/500s — hide the whole section rather than show a
-  // broken toggle or an error banner (see the sprint's deploy rule).
-  if (isPending || isError || !data) return null
+  // /api/push/* routes exist, the initial fetch 404/405/500s with no cached data yet — hide the
+  // whole section rather than show a broken toggle or an error banner (see the sprint's deploy
+  // rule). Deliberately NOT checking `isError` here: once data has loaded once, a later failed
+  // background refetch must not hide an otherwise-healthy section.
+  if (isPending || !data) return null
 
   return <RemindersContent data={data} />
 }
