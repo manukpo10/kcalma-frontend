@@ -27,6 +27,20 @@ export class ApiOfflineError extends Error {
   }
 }
 
+/** Thrown on a 400 whose body carries a `fieldErrors` map (the shape the backend's bean-validation
+ *  handler — `GlobalExceptionHandler.handleValidation` — always sends), keyed by field name, e.g.
+ *  `{ birthDate: "Kcalma es para personas de entre 18 y 100 años." }`. Forms can catch this
+ *  specifically to show the exact per-field reason instead of only the generic top-level message. */
+export class ApiValidationError extends Error {
+  fieldErrors: Record<string, string>
+
+  constructor(message: string, fieldErrors: Record<string, string>) {
+    super(message)
+    this.name = 'ApiValidationError'
+    this.fieldErrors = fieldErrors
+  }
+}
+
 async function buildHeaders(init: RequestInit): Promise<HeadersInit> {
   const { data } = await supabase.auth.getSession()
   const token = data.session?.access_token
@@ -126,7 +140,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
   }
 
   if (!response.ok) {
-    throw new Error(await friendlyErrorMessage(response))
+    throw await buildResponseError(response)
   }
 
   if (response.status === 204) {
@@ -139,16 +153,39 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return (text ? JSON.parse(text) : undefined) as T
 }
 
+interface ErrorBody {
+  message?: string
+  fieldErrors?: Record<string, string>
+}
+
+/** Every JSON error body funnels through the backend's `GlobalExceptionHandler`, so this is the
+ *  one place that parses it — never re-reads `response.json()` more than once per `Response`. */
+async function parseErrorBody(response: Response): Promise<ErrorBody> {
+  try {
+    const body: unknown = await response.json()
+    if (body && typeof body === 'object') {
+      return body as ErrorBody
+    }
+  } catch {
+    // Not a JSON body — callers fall back to a generic message.
+  }
+  return {}
+}
+
 /** Backend errors (e.g. the Gemini-analysis 502, or a 429 rate limit) carry a Spanish
  *  {"message": "..."} body — prefer it over a generic status-code message. */
 async function friendlyErrorMessage(response: Response): Promise<string> {
-  try {
-    const body: unknown = await response.json()
-    if (body && typeof body === 'object' && 'message' in body && typeof body.message === 'string') {
-      return body.message
-    }
-  } catch {
-    // Not a JSON body — fall through to the generic message.
+  const { message } = await parseErrorBody(response)
+  return typeof message === 'string' ? message : `Se produjo un error (${response.status}).`
+}
+
+/** Same idea as `friendlyErrorMessage`, but promoted to `ApiValidationError` when the body also
+ *  carries a `fieldErrors` map, so callers can opt in to the specific per-field reason. */
+async function buildResponseError(response: Response): Promise<Error> {
+  const { message, fieldErrors } = await parseErrorBody(response)
+  const resolvedMessage = typeof message === 'string' ? message : `Se produjo un error (${response.status}).`
+  if (fieldErrors && typeof fieldErrors === 'object') {
+    return new ApiValidationError(resolvedMessage, fieldErrors)
   }
-  return `Se produjo un error (${response.status}).`
+  return new Error(resolvedMessage)
 }
