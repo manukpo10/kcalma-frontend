@@ -120,10 +120,17 @@ function RemindersContent({ data }: RemindersContentProps) {
       try {
         await unsubscribe.mutateAsync()
       } catch {
-        // Best-effort: still record the "off" preference server-side even if the browser-side
-        // unsubscribe/DELETE failed (e.g. the subscription was already gone).
+        // Best-effort and deliberately swallowed: the backend's `enabled` flag (persisted right
+        // below) is what actually governs whether push notifications get sent, so a failed
+        // browser-side unsubscribe/DELETE (e.g. the subscription was already gone) shouldn't
+        // block turning reminders off server-side.
       }
-      await persist({ ...data, enabled: false })
+
+      try {
+        await persist({ ...data, enabled: false })
+      } catch {
+        setPermissionError('No se pudo desactivar. Intentá de nuevo.')
+      }
       return
     }
 
