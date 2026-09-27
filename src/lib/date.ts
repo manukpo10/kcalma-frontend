@@ -12,6 +12,24 @@ export function todayIso(): string {
   return toIso(new Date())
 }
 
+const DATE_PARAM_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+
+/**
+ * Parses a `?date=YYYY-MM-DD` search param (used to backfill meals on days before today). Falls
+ * back to today for anything missing, malformed, calendar-invalid (e.g. `2024-02-31`, which `Date`
+ * would silently roll into March), or in the future — callers never have to re-validate this
+ * themselves before using it as an `entryDate`.
+ */
+export function parseDateParam(value: string | null | undefined): string {
+  if (!value || !DATE_PARAM_PATTERN.test(value)) return todayIso()
+  const [year, month, day] = value.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+  const isRealCalendarDate = date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
+  if (!isRealCalendarDate) return todayIso()
+  // Plain ISO strings compare lexicographically the same as chronologically, so no Date math needed.
+  return value > todayIso() ? todayIso() : value
+}
+
 export function addDays(iso: string, delta: number): string {
   const [year, month, day] = iso.split('-').map(Number)
   const date = new Date(year, month - 1, day)
