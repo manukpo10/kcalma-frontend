@@ -31,7 +31,7 @@ export function useAddWater() {
     onMutate: async ({ date, deltaMl }) => {
       await queryClient.cancelQueries({ queryKey: ['day', date] })
       const previous = queryClient.getQueryData<DayResponse>(['day', date])
-      if (previous) {
+      if (previous?.water) {
         queryClient.setQueryData<DayResponse>(['day', date], {
           ...previous,
           water: { ...previous.water, consumedMl: Math.max(0, previous.water.consumedMl + deltaMl) },

@@ -17,5 +17,6 @@ export interface DayResponse {
     sodium: boolean
   }
   meals: Record<MealType, FoodEntry[]>
-  water: DayWater
+  /** Optional so the page keeps working against a backend that doesn't send water yet. */
+  water?: DayWater
 }

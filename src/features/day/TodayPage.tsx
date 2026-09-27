@@ -268,7 +268,7 @@ export function TodayPage() {
             />
           </div>
 
-          <WaterCard date={date} water={data.water} />
+          {data.water && <WaterCard date={date} water={data.water} />}
 
           {repeatError && <Banner tone="danger" className="mb-4">{repeatError}</Banner>}
 
