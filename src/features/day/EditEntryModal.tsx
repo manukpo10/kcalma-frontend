@@ -2,6 +2,7 @@ import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Banner } from '../../components/ui/Banner'
 import { Button } from '../../components/ui/Button'
+import { FavoriteStarButton } from '../../components/ui/FavoriteStarButton'
 import { MacroChips } from '../../components/ui/MacroChips'
 import { Sheet } from '../../components/ui/Sheet'
 import { SourceBadge } from '../../components/ui/SourceBadge'
@@ -11,6 +12,7 @@ import { IngredientsSection } from '../food/IngredientsSection'
 import { MealTypePicker } from '../food/MealTypePicker'
 import { computeDishTotals, computeTotals, entryToCreateRequest, round1, sumGrams } from '../food/nutritionMath'
 import type { DraftIngredient, FoodEntry, MealType } from '../food/types'
+import { useAddFavorite, useRemoveFavorite } from '../food/useFavorites'
 import { useDeleteFoodEntry, useSaveFoodEntries, useUpdateFoodEntry } from '../food/useFoodEntries'
 
 interface EditEntryModalProps {
@@ -35,8 +37,24 @@ export function EditEntryModal({ entry, onClose }: EditEntryModalProps) {
   const saveEntries = useSaveFoodEntries()
   const { showToast } = useToast()
 
+  // Session-local, same reasoning as ReviewStep: favoriting returns a new favorite id, not a
+  // link back to this entry, so there's no way to ask the server "is this already a favorite".
+  const [favoriteId, setFavoriteId] = useState<string | null>(null)
+  const addFavorite = useAddFavorite()
+  const removeFavorite = useRemoveFavorite()
+
   const totals = ingredients ? computeDishTotals(ingredients) : computeTotals(entry, grams)
   const error = updateEntry.error ?? deleteEntry.error
+
+  const handleToggleFavorite = async () => {
+    if (favoriteId) {
+      await removeFavorite.mutateAsync(favoriteId)
+      setFavoriteId(null)
+    } else {
+      const created = await addFavorite.mutateAsync({ entryId: entry.id })
+      setFavoriteId(created.id)
+    }
+  }
 
   /** Scales every stored ingredient's grams by the same ratio as the dish's own — per-100g values
    *  are invariant under uniform scaling, so only the grams themselves need to move. */
@@ -109,9 +127,17 @@ export function EditEntryModal({ entry, onClose }: EditEntryModalProps) {
 
   return (
     <Sheet onClose={onClose} ariaLabel={`Editar ${entry.name}`}>
-      <p className="mb-1 text-lg font-bold text-ink capitalize">
-        {entry.name} <SourceBadge source={entry.source} className="ml-1" />
-      </p>
+      <div className="mb-1 flex items-start justify-between gap-2">
+        <p className="text-lg font-bold text-ink capitalize">
+          {entry.name} <SourceBadge source={entry.source} className="ml-1" />
+        </p>
+        <FavoriteStarButton
+          favorited={Boolean(favoriteId)}
+          onToggle={() => void handleToggleFavorite()}
+          disabled={addFavorite.isPending || removeFavorite.isPending}
+          className="-mt-1 -mr-1"
+        />
+      </div>
       <MacroChips kcal={totals.kcal} protein={totals.protein} fat={totals.fat} carbs={totals.carbs} className="mb-5" />
 
       <div className="mb-4">

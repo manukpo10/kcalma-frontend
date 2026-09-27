@@ -1,15 +1,18 @@
 import { X } from 'lucide-react'
+import { useState } from 'react'
 import { Banner } from '../../components/ui/Banner'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { FavoriteStarButton } from '../../components/ui/FavoriteStarButton'
 import { MacroChips } from '../../components/ui/MacroChips'
 import { SourceBadge } from '../../components/ui/SourceBadge'
 import { formatNumber } from '../../lib/format'
 import { GramsStepper } from './GramsStepper'
 import { IngredientsSection } from './IngredientsSection'
 import { MealTypePicker } from './MealTypePicker'
-import { computeDishTotals } from './nutritionMath'
+import { computeDishTotals, per100FromTotals } from './nutritionMath'
 import type { DraftDish, MealType } from './types'
+import { useAddFavorite, useRemoveFavorite } from './useFavorites'
 
 export interface DayPreview {
   newKcal: number
@@ -50,6 +53,55 @@ export function ReviewStep({
   saving,
   saveError,
 }: ReviewStepProps) {
+  // Session-local: favoriting returns a new favorite id, not a link back to this draft dish, so
+  // "is this one already favorited" only tracks what happened on THIS screen (see FavoriteStarButton).
+  const [favoriteIdByDishKey, setFavoriteIdByDishKey] = useState<Record<string, string>>({})
+  const [togglingDishKey, setTogglingDishKey] = useState<string | null>(null)
+  const addFavorite = useAddFavorite()
+  const removeFavorite = useRemoveFavorite()
+
+  const handleToggleFavorite = async (dish: DraftDish) => {
+    setTogglingDishKey(dish.key)
+    try {
+      const existingId = favoriteIdByDishKey[dish.key]
+      if (existingId) {
+        await removeFavorite.mutateAsync(existingId)
+        setFavoriteIdByDishKey((current) => {
+          const next = { ...current }
+          delete next[dish.key]
+          return next
+        })
+      } else {
+        const totals = computeDishTotals(dish.ingredients)
+        const per100 = per100FromTotals(totals, dish.grams)
+        const created = await addFavorite.mutateAsync({
+          name: dish.name,
+          grams: dish.grams,
+          ...per100,
+          source: dish.source,
+          fdcId: dish.fdcId,
+          mealType,
+          ingredients: dish.ingredients.map((ingredient) => ({
+            name: ingredient.name,
+            grams: ingredient.grams,
+            kcalPer100: ingredient.kcalPer100,
+            proteinPer100: ingredient.proteinPer100,
+            fatPer100: ingredient.fatPer100,
+            carbsPer100: ingredient.carbsPer100,
+            fiberPer100: ingredient.fiberPer100,
+            sugarPer100: ingredient.sugarPer100,
+            sodiumMgPer100: ingredient.sodiumMgPer100,
+            source: ingredient.source,
+            fdcId: ingredient.fdcId,
+          })),
+        })
+        setFavoriteIdByDishKey((current) => ({ ...current, [dish.key]: created.id }))
+      }
+    } finally {
+      setTogglingDishKey(null)
+    }
+  }
+
   return (
     <div className="space-y-5">
       {note && dishes.length === 0 && <Banner tone="warning">{note}</Banner>}
@@ -82,6 +134,13 @@ export function ReviewStep({
                   </div>
                   <GramsStepper value={dish.grams} onChange={(grams) => onChangeDishGrams(dish.key, grams)} />
                   <MacroChips kcal={totals.kcal} protein={totals.protein} fat={totals.fat} carbs={totals.carbs} />
+                  <FavoriteStarButton
+                    favorited={Boolean(favoriteIdByDishKey[dish.key])}
+                    onToggle={() => void handleToggleFavorite(dish)}
+                    disabled={togglingDishKey === dish.key}
+                    label="Guardar como favorito"
+                    favoritedLabel="Guardado como favorito"
+                  />
                   <IngredientsSection
                     ingredients={dish.ingredients}
                     onChangeGrams={(ingredientKey, grams) => onChangeIngredientGrams(dish.key, ingredientKey, grams)}

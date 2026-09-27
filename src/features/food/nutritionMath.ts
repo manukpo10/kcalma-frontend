@@ -1,4 +1,14 @@
-import type { FoodEntry, FoodEntryRequest, FoodSource, Per100, Totals } from './types'
+import type {
+  AnalyzedDish,
+  CreateFavoriteRequest,
+  DraftDish,
+  FavoriteDish,
+  FoodEntry,
+  FoodEntryRequest,
+  FoodSource,
+  Per100,
+  Totals,
+} from './types'
 
 /**
  * totals = per100 * grams / 100, rounded to the nearest whole unit — mirrors the backend's
@@ -115,5 +125,45 @@ export function entryToCreateRequest(entry: FoodEntry): FoodEntryRequest {
     source: entry.source,
     fdcId: entry.fdcId,
     ingredients: entry.ingredients ?? undefined,
+  }
+}
+
+/** Converts a resolved dish (from photo/text analysis, a suggestion, a favorite, or a recent
+ *  dish — anything shaped like `AnalyzedDish`) into an editable `DraftDish` for the review step.
+ *  Grams round to whole numbers (min 1) since `GramsStepper` only edits whole grams; everything
+ *  else carries through unchanged. Shared by AddMealPage (photo/text analysis + the Recientes/
+ *  Favoritos picker) and SuggestMealsPage so there's exactly one place this mapping lives. */
+export function analyzedDishToDraft(dish: AnalyzedDish): DraftDish {
+  return {
+    key: crypto.randomUUID(),
+    name: dish.name,
+    grams: Math.max(1, Math.round(dish.grams)),
+    source: dish.source,
+    fdcId: dish.fdcId,
+    ingredients: dish.ingredients.map((ingredient) => ({
+      key: crypto.randomUUID(),
+      ...ingredient,
+      grams: Math.max(1, Math.round(ingredient.grams)),
+    })),
+  }
+}
+
+/** Turns an existing favorite back into the shape `POST /api/favorites` accepts — used to undo
+ *  removing one, the same way `entryToCreateRequest` undoes deleting a food entry. */
+export function favoriteToCreateRequest(favorite: FavoriteDish): CreateFavoriteRequest {
+  return {
+    name: favorite.name,
+    grams: favorite.grams,
+    kcalPer100: favorite.kcalPer100,
+    proteinPer100: favorite.proteinPer100,
+    fatPer100: favorite.fatPer100,
+    carbsPer100: favorite.carbsPer100,
+    fiberPer100: favorite.fiberPer100,
+    sugarPer100: favorite.sugarPer100,
+    sodiumMgPer100: favorite.sodiumMgPer100,
+    source: favorite.source,
+    fdcId: favorite.fdcId,
+    ingredients: favorite.ingredients,
+    mealType: favorite.mealType ?? undefined,
   }
 }

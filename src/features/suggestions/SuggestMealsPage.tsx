@@ -9,9 +9,10 @@ import { Skeleton } from '../../components/ui/Skeleton'
 import { TAB_BAR_CLEARANCE_CLASS } from '../../components/BottomTabBar'
 import { todayIso } from '../../lib/date'
 import { cn } from '../../lib/cn'
-import type { AnalyzedDish, DraftDish, MealType } from '../food/types'
+import type { MealType } from '../food/types'
 import { mealTypeForNow } from '../food/labels'
 import { MealTypePicker } from '../food/MealTypePicker'
+import { analyzedDishToDraft } from '../food/nutritionMath'
 import { SuggestionOptionCard } from './SuggestionOptionCard'
 import type { SuggestionOption, SuggestionResponse } from './types'
 import { useSuggestMeals } from './useSuggestions'
@@ -20,21 +21,6 @@ const MAX_PREFERENCES_LENGTH = 300
 const PREFERENCES_PLACEHOLDER = 'Ej: algo rápido, tengo pollo y arroz, sin carne'
 
 type Step = 'form' | 'loading' | 'results'
-
-function toDraftDishes(dishes: AnalyzedDish[]): DraftDish[] {
-  return dishes.map((dish) => ({
-    key: crypto.randomUUID(),
-    name: dish.name,
-    grams: Math.max(1, Math.round(dish.grams)),
-    source: dish.source,
-    fdcId: dish.fdcId,
-    ingredients: dish.ingredients.map((ingredient) => ({
-      key: crypto.randomUUID(),
-      ...ingredient,
-      grams: Math.max(1, Math.round(ingredient.grams)),
-    })),
-  }))
-}
 
 /**
  * "¿Qué como?": asks the backend for 3 meal options that fit what's left of today's budget for a
@@ -71,7 +57,7 @@ export function SuggestMealsPage() {
   }
 
   const handleRegister = (option: SuggestionOption) => {
-    navigate('/agregar', { state: { prefill: { dishes: toDraftDishes(option.dishes), mealType } } })
+    navigate('/agregar', { state: { prefill: { dishes: option.dishes.map(analyzedDishToDraft), mealType } } })
   }
 
   // This page is a tab now: the tab bar handles leaving it, the back arrow only steps back from the results.

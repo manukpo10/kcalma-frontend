@@ -11,7 +11,8 @@ import { compressImage } from './compressImage'
 import { DescribeMealStep } from './DescribeMealStep'
 import { mealTypeForNow } from './labels'
 import { ManualAddStep } from './ManualAddStep'
-import { combineSources, computeDishTotals, per100FromTotals, round1, sumGrams, sumTotals } from './nutritionMath'
+import { analyzedDishToDraft, combineSources, computeDishTotals, per100FromTotals, round1, sumGrams, sumTotals } from './nutritionMath'
+import { RecentFavoritesPicker } from './RecentFavoritesPicker'
 import { ReviewStep, type DayPreview } from './ReviewStep'
 import type { AnalyzedDish, DraftDish, FoodEntryRequest, MealType } from './types'
 import { useAnalyzeDescription, useAnalyzePhoto, useSaveFoodEntries } from './useFoodEntries'
@@ -31,22 +32,6 @@ const STEP_TITLES: Record<Step, string> = {
 interface SuggestionPrefill {
   dishes: DraftDish[]
   mealType: MealType
-}
-
-function analyzedDishToDraft(dish: AnalyzedDish): DraftDish {
-  const ingredients = dish.ingredients.map((ingredient) => ({
-    key: crypto.randomUUID(),
-    ...ingredient,
-    grams: Math.max(1, Math.round(ingredient.grams)),
-  }))
-  return {
-    key: crypto.randomUUID(),
-    name: dish.name,
-    grams: Math.max(1, Math.round(dish.grams)),
-    source: dish.source,
-    fdcId: dish.fdcId,
-    ingredients,
-  }
 }
 
 export function AddMealPage() {
@@ -203,6 +188,15 @@ export function AddMealPage() {
     navigate('/', { replace: true })
   }
 
+  /** A dish was tapped in the Recientes/Favoritos picker — same destination as an analyzed photo:
+   *  a single-dish review, grams still editable before saving. */
+  const handleSelectQuickDish = (dish: AnalyzedDish, dishMealType: MealType | null) => {
+    setDishes([analyzedDishToDraft(dish)])
+    setNote(null)
+    setMealType(dishMealType ?? mealTypeForNow())
+    setStep('review')
+  }
+
   const preview: DayPreview | null =
     day && dishes.length > 0
       ? (() => {
@@ -268,6 +262,8 @@ export function AddMealPage() {
             onChange={handleFileSelected}
           />
           <input ref={galleryInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelected} />
+
+          <RecentFavoritesPicker onSelectDish={handleSelectQuickDish} />
         </div>
       )}
 

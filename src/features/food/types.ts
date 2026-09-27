@@ -117,3 +117,32 @@ export interface DraftDish {
   fdcId: number | null
   ingredients: DraftIngredient[]
 }
+
+/** A saved favorite — the same analyzed-dish shape (name/grams/per-100g/ingredients/source/fdcId)
+ *  plus the favorite's own id, the meal type it was saved under (if any), and when it was added. */
+export interface FavoriteDish extends AnalyzedDish {
+  id: string
+  mealType: MealType | null
+  createdAt: string
+}
+
+/** One dish the user has logged before, aggregated across every day it was eaten — same
+ *  analyzed-dish shape plus how/when it was last logged. */
+export interface RecentDish extends AnalyzedDish {
+  lastMealType: MealType
+  timesLogged: number
+  lastLoggedOn: string
+}
+
+/** POST /api/favorites body: either an existing saved entry's id, or a full dish payload (the
+ *  same shape a `FoodEntryRequest` sends, minus `entryDate`) — both take an optional `mealType`. */
+export type CreateFavoriteRequest =
+  | { entryId: string; mealType?: MealType }
+  | (Per100 & {
+      name: string
+      grams: number
+      source: FoodSource
+      fdcId: number | null
+      ingredients?: FoodEntryIngredientRequest[]
+      mealType?: MealType
+    })
