@@ -1,5 +1,5 @@
-import { Bell, Minus, Plus, Send, Share2, SquarePlus } from 'lucide-react'
-import { useState } from 'react'
+import { Bell, Minus, Plus, Send, Share, SquarePlus } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
 import { Banner } from '../../components/ui/Banner'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
@@ -52,6 +52,30 @@ function HoursStepper({ value, onChange, disabled }: HoursStepperProps) {
   )
 }
 
+interface InstallStepProps {
+  step: number
+  children: ReactNode
+}
+
+/** The text must stay a single flex child: inside a flex row, every text run and inline
+ *  <strong>/icon becomes its own flex item, which splits the sentence into gapped columns. */
+function InstallStep({ step, children }: InstallStepProps) {
+  return (
+    <li className="flex items-start gap-3">
+      <span
+        aria-hidden="true"
+        className="flex size-6 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xs font-semibold text-ink-muted"
+      >
+        {step}
+      </span>
+      <span className="pt-0.5">{children}</span>
+    </li>
+  )
+}
+
+/** Inline glyph matching the iOS control the step refers to, so it can be spotted on screen. */
+const inlineIconClass = 'ml-1 inline size-4 align-text-bottom text-ink-muted'
+
 /** iOS only exposes a working Push API to an installed (home-screen) PWA — a normal Safari tab
  *  has no functioning `PushManager` at all, so there's nothing to toggle yet. */
 function InstallInstructions() {
@@ -65,24 +89,16 @@ function InstallInstructions() {
         En iPhone, las notificaciones sólo funcionan una vez que instalás Kcalma en la pantalla de inicio:
       </p>
       <ol className="space-y-3 text-sm text-ink">
-        <li className="flex items-center gap-3">
-          <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xs font-semibold text-ink-muted">
-            1
-          </span>
-          Si no estás en Safari, abrí este sitio ahí.
-        </li>
-        <li className="flex items-center gap-3">
-          <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-ink-muted">
-            <Share2 className="size-4" aria-hidden="true" />
-          </span>
-          Tocá el botón <strong>Compartir</strong> de la barra inferior.
-        </li>
-        <li className="flex items-center gap-3">
-          <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-ink-muted">
-            <SquarePlus className="size-4" aria-hidden="true" />
-          </span>
-          Elegí <strong>Agregar a pantalla de inicio</strong> y abrí Kcalma desde ese ícono.
-        </li>
+        <InstallStep step={1}>Abrí este sitio en Safari</InstallStep>
+        <InstallStep step={2}>
+          Tocá <strong>Compartir</strong>
+          <Share className={inlineIconClass} aria-hidden="true" />
+        </InstallStep>
+        <InstallStep step={3}>
+          Elegí <strong>Agregar a pantalla de inicio</strong>
+          <SquarePlus className={inlineIconClass} aria-hidden="true" />
+        </InstallStep>
+        <InstallStep step={4}>Abrí Kcalma desde el ícono nuevo de tu pantalla de inicio</InstallStep>
       </ol>
     </Card>
   )
