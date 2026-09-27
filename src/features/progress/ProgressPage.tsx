@@ -10,6 +10,7 @@ import { SegmentedControl } from '../../components/ui/SegmentedControl'
 import { Skeleton } from '../../components/ui/Skeleton'
 import { EditWeightSheet } from './EditWeightSheet'
 import { RANGE_OPTIONS } from './labels'
+import { MeasurementsSection } from './MeasurementsSection'
 import { NutritionChart } from './NutritionChart'
 import { RecentWeighIns } from './RecentWeighIns'
 import { RegisterWeightSheet } from './RegisterWeightSheet'
@@ -80,6 +81,8 @@ export function ProgressPage() {
           <div className="mb-6">
             <NutritionChart nutrition={data.nutrition} />
           </div>
+
+          <MeasurementsSection from={data.from} to={data.to} />
 
           <div aria-hidden="true" className={TAB_BAR_CLEARANCE_CLASS} />
         </>

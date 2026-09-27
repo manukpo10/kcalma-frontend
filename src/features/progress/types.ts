@@ -61,3 +61,20 @@ export interface UpsertWeightResponse {
   entry: WeightEntryResponse
   targetsUpdated: boolean
 }
+
+/** Every field is optional — GET returns `null` for whatever wasn't recorded on a given date. */
+export interface MeasurementEntry {
+  date: string
+  waistCm: number | null
+  hipCm: number | null
+  chestCm: number | null
+  armCm: number | null
+  thighCm: number | null
+  bodyFatPct: number | null
+  muscleMassKg: number | null
+}
+
+export type MeasurementField = Exclude<keyof MeasurementEntry, 'date'>
+
+/** PUT /api/measurements/{date} body — every field optional, but at least one is required. */
+export type MeasurementRequest = Partial<Record<MeasurementField, number>>
