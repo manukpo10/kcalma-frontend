@@ -1,6 +1,6 @@
-import { Candy, ChevronLeft, ChevronRight, Drumstick, Droplet, Gauge, Leaf, Pencil, Repeat2, Sparkles, Trash2, Wheat } from 'lucide-react'
+import { Candy, ChevronLeft, ChevronRight, Drumstick, Droplet, Gauge, Leaf, Pencil, Plus, Repeat2, Sparkles, Trash2, Wheat } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { Banner } from '../../components/ui/Banner'
 import { BrandMark } from '../../components/ui/BrandMark'
 import { ProgressRing } from '../../components/ui/ProgressRing'
@@ -9,7 +9,7 @@ import { Skeleton } from '../../components/ui/Skeleton'
 import { StatTile } from '../../components/ui/StatTile'
 import { useToast } from '../../components/ui/ToastProvider'
 import { TAB_BAR_CLEARANCE_CLASS } from '../../components/BottomTabBar'
-import { addDays, formatDayLabel, todayIso } from '../../lib/date'
+import { addDays, formatDayLabel, parseDateParam, todayIso } from '../../lib/date'
 import { formatNumber } from '../../lib/format'
 import { CheckinCard } from '../checkin/CheckinCard'
 import { MEAL_TYPE_LABELS, MEAL_TYPE_ORDER } from '../food/labels'
@@ -31,8 +31,30 @@ const VISIBILITY_CHECK_MIN_INTERVAL_MS = 2000
 
 export function TodayPage() {
   const navigate = useNavigate()
-  const [date, setDate] = useState(todayIso)
+  const [searchParams, setSearchParams] = useSearchParams()
+  // Seeded from `?date=` so a link built while looking at a past day (a per-meal "agregar" CTA,
+  // the tab bar's "+", or this same page reloaded) reopens on that day instead of snapping to today.
+  const [date, setDate] = useState(() => parseDateParam(searchParams.get('date')))
   const { data, isPending, error, refetch } = useDay(date)
+
+  /** Changes the viewed day AND keeps `?date=` in sync (`replace` — flipping days isn't a distinct
+   *  history entry). Today collapses back to a bare `/` so the common case keeps a clean URL. */
+  const updateDate = (nextDate: string) => {
+    setDate(nextDate)
+    setSearchParams(
+      (previous) => {
+        const next = new URLSearchParams(previous)
+        if (nextDate === todayIso()) {
+          next.delete('date')
+        } else {
+          next.set('date', nextDate)
+        }
+        return next
+      },
+      { replace: true },
+    )
+  }
+
   const [editingEntry, setEditingEntry] = useState<FoodEntry | null>(null)
   const [deletingMeal, setDeletingMeal] = useState<DeletingMeal | null>(null)
 
@@ -77,6 +99,7 @@ export function TodayPage() {
   const dateRef = useRef(date)
   const knownTodayRef = useRef(todayIso())
   const refetchRef = useRef(refetch)
+  const updateDateRef = useRef(updateDate)
   const lastCheckRef = useRef(0)
 
   useEffect(() => {
@@ -86,6 +109,10 @@ export function TodayPage() {
   useEffect(() => {
     refetchRef.current = refetch
   }, [refetch])
+
+  useEffect(() => {
+    updateDateRef.current = updateDate
+  })
 
   useEffect(() => {
     const checkFreshness = () => {
@@ -102,7 +129,7 @@ export function TodayPage() {
 
       if (rolledOverPastMidnight && wasShowingToday) {
         // Follow "today" forward — changing the date itself triggers a fresh fetch for it.
-        setDate(currentToday)
+        updateDateRef.current(currentToday)
         return
       }
 
@@ -122,16 +149,28 @@ export function TodayPage() {
       <div className="mb-5 flex items-center justify-between">
         <button
           type="button"
-          onClick={() => setDate((current) => addDays(current, -1))}
+          onClick={() => updateDate(addDays(date, -1))}
           aria-label="Día anterior"
           className="flex size-10 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink"
         >
           <ChevronLeft className="size-5" aria-hidden="true" />
         </button>
-        <p className="text-base font-semibold text-ink">{formatDayLabel(date)}</p>
+        <div className="relative inline-flex">
+          <p aria-hidden="true" className="flex h-11 items-center rounded-full px-3 text-base font-semibold text-ink">
+            {formatDayLabel(date)}
+          </p>
+          <input
+            type="date"
+            value={date}
+            max={todayIso()}
+            onChange={(event) => updateDate(parseDateParam(event.target.value))}
+            aria-label="Elegir otro día"
+            className="absolute inset-0 h-11 w-full cursor-pointer opacity-0"
+          />
+        </div>
         <button
           type="button"
-          onClick={() => setDate((current) => addDays(current, 1))}
+          onClick={() => updateDate(addDays(date, 1))}
           disabled={isToday}
           aria-label="Día siguiente"
           className="flex size-10 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent"
@@ -285,18 +324,33 @@ export function TodayPage() {
             {MEAL_TYPE_ORDER.map((mealType) => {
               const entries = data.meals[mealType] ?? []
               if (entries.length === 0) {
-                if (!isMealRepeatable(mealType)) return null
+                if (isMealRepeatable(mealType)) {
+                  return (
+                    <button
+                      key={mealType}
+                      type="button"
+                      onClick={() => void handleRepeatMeal(mealType)}
+                      disabled={copyMeal.isPending}
+                      className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-dashed border-hairline text-sm font-semibold text-primary-300 transition-colors hover:bg-surface-2 active:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Repeat2 className="size-4" aria-hidden="true" />
+                      Repetir {MEAL_TYPE_LABELS[mealType].toLowerCase()} de ayer
+                    </button>
+                  )
+                }
+                // No entries yet and nothing to repeat (any other day, or today with no matching
+                // meal logged yesterday): a direct, meal-scoped shortcut into the add flow — the
+                // main gap this feature closes, since otherwise the only way in was the tab bar's
+                // generic "+", always landing on today's meal-type guess.
                 return (
-                  <button
+                  <Link
                     key={mealType}
-                    type="button"
-                    onClick={() => void handleRepeatMeal(mealType)}
-                    disabled={copyMeal.isPending}
-                    className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-dashed border-hairline text-sm font-semibold text-primary-300 transition-colors hover:bg-surface-2 active:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    to={`/agregar?date=${date}&meal=${mealType}`}
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-dashed border-hairline text-sm font-semibold text-primary-300 transition-colors hover:bg-surface-2 active:bg-surface-2"
                   >
-                    <Repeat2 className="size-4" aria-hidden="true" />
-                    Repetir {MEAL_TYPE_LABELS[mealType].toLowerCase()} de ayer
-                  </button>
+                    <Plus className="size-4" aria-hidden="true" />
+                    Agregar {MEAL_TYPE_LABELS[mealType].toLowerCase()}
+                  </Link>
                 )
               }
               return (
@@ -338,14 +392,6 @@ export function TodayPage() {
                 </div>
               )
             })}
-
-            {allMealsEmpty && (
-              <div className="rounded-xl bg-surface p-6 text-center">
-                <p className="text-sm text-ink-muted">
-                  Todavía no registraste comidas {isToday ? 'hoy' : 'ese día'}.
-                </p>
-              </div>
-            )}
           </div>
 
           <div aria-hidden="true" className={TAB_BAR_CLEARANCE_CLASS} />

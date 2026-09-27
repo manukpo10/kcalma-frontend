@@ -1,6 +1,6 @@
 import { CalendarDays, LineChart, Plus, Sparkles, UserRound } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { NavLink } from 'react-router'
+import { NavLink, useSearchParams } from 'react-router'
 import { cn } from '../lib/cn'
 
 interface TabLinkProps {
@@ -35,6 +35,13 @@ function TabLink({ to, label, icon: Icon, end }: TabLinkProps) {
  * `TAB_BAR_CLEARANCE_CLASS`) so content never sits underneath this fixed bar.
  */
 export function BottomTabBar() {
+  // Forwards the day being viewed on "Hoy" (TodayPage keeps `?date=` in the URL while browsing a
+  // past day) so the central "+" adds to THAT day instead of always defaulting to today. On any
+  // other tab there's no `date` param to find, so this quietly falls back to plain "/agregar".
+  const [searchParams] = useSearchParams()
+  const dateParam = searchParams.get('date')
+  const addMealHref = dateParam ? `/agregar?date=${dateParam}` : '/agregar'
+
   return (
     <nav
       aria-label="Navegación principal"
@@ -45,7 +52,7 @@ export function BottomTabBar() {
         <TabLink to="/progreso" label="Progreso" icon={LineChart} />
 
         <NavLink
-          to="/agregar"
+          to={addMealHref}
           aria-label="Agregar comida"
           className="-mt-7 flex size-16 shrink-0 items-center justify-center justify-self-center rounded-full bg-primary text-primary-fg shadow-lg transition-transform active:scale-95"
         >
