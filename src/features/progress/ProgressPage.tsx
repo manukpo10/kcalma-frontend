@@ -8,6 +8,7 @@ import { Button } from '../../components/ui/Button'
 import { Screen } from '../../components/ui/Screen'
 import { SegmentedControl } from '../../components/ui/SegmentedControl'
 import { Skeleton } from '../../components/ui/Skeleton'
+import { WeeklyAdjustmentsSection } from '../checkin/WeeklyAdjustmentsSection'
 import { EditWeightSheet } from './EditWeightSheet'
 import { RANGE_OPTIONS } from './labels'
 import { MeasurementsSection } from './MeasurementsSection'
@@ -83,6 +84,8 @@ export function ProgressPage() {
           </div>
 
           <MeasurementsSection from={data.from} to={data.to} />
+
+          <WeeklyAdjustmentsSection />
 
           <div aria-hidden="true" className={TAB_BAR_CLEARANCE_CLASS} />
         </>
