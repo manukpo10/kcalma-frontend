@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Input } from '../../components/ui/Input'
 
 const TIME_PATTERN = /^\d{2}:\d{2}$/
@@ -23,10 +23,15 @@ type ReminderTimeInputProps = Omit<ComponentProps<typeof Input>, 'type' | 'value
  */
 export function ReminderTimeInput({ value, onChange, ...props }: ReminderTimeInputProps) {
   const [draft, setDraft] = useState(value)
-
-  useEffect(() => {
+  // Sync the draft when `value` changes from outside (e.g. the settings finished loading, or a
+  // rollback) by adjusting state during render instead of in an effect — this is React's
+  // documented pattern for "reset state when a prop changes" and avoids the extra
+  // render-then-effect-then-render pass a useEffect version would cause.
+  const [prevValue, setPrevValue] = useState(value)
+  if (value !== prevValue) {
+    setPrevValue(value)
     setDraft(value)
-  }, [value])
+  }
 
   const commit = () => {
     if (TIME_PATTERN.test(draft) && draft !== value) {
