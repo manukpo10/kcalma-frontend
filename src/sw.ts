@@ -45,7 +45,15 @@ interface PushPayload {
 }
 
 self.addEventListener('push', (event) => {
-  const payload: PushPayload = event.data?.json() ?? {}
+  let payload: PushPayload = {}
+  try {
+    payload = event.data?.json() ?? {}
+  } catch {
+    // Not JSON — fall back to the raw text as the body. `showNotification` below must run
+    // either way: Safari revokes the push subscription entirely if a push event doesn't result
+    // in a visible notification.
+    payload = { body: event.data?.text() ?? '' }
+  }
   const { title = 'Kcalma', body = '', url = '/' } = payload
 
   event.waitUntil(
@@ -58,23 +66,39 @@ self.addEventListener('push', (event) => {
   )
 })
 
+/** Only ever navigate to a same-origin, relative path — never an absolute or protocol-relative
+ *  (`//host/...`) URL, which `clients.openWindow`/postMessage would otherwise happily send
+ *  somewhere off-origin. */
+function isRelativePath(value: string): boolean {
+  return value.startsWith('/') && !value.startsWith('//')
+}
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const url = (event.notification.data as { url?: string } | undefined)?.url ?? '/'
+  const rawUrl = (event.notification.data as { url?: string } | undefined)?.url
+  const url = rawUrl && isRelativePath(rawUrl) ? rawUrl : '/'
 
   event.waitUntil(
     (async () => {
+      const windowClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
       const target = new URL(url, self.location.origin).href
-      const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      const client = windowClients.find((c) => c.url === target) ?? windowClients[0]
 
-      const existing = clients.find((client) => client.url === target) ?? clients[0]
-      if (existing) {
-        await existing.focus()
-        if ('navigate' in existing) await existing.navigate(target)
-        return
+      if (client) {
+        try {
+          await client.focus()
+          // In-app SPA navigation (see ServiceWorkerNavigationListener) instead of
+          // WindowClient.navigate(): no full reload, and doesn't depend on navigate()'s
+          // uncertain iOS Safari support.
+          client.postMessage({ type: 'NAVIGATE', url })
+          return
+        } catch {
+          // focus() can reject if the client went away between matchAll() and here — fall
+          // through to opening a fresh window below.
+        }
       }
 
-      await self.clients.openWindow(target)
+      await self.clients.openWindow(url)
     })(),
   )
 })
