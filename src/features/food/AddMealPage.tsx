@@ -1,11 +1,11 @@
-import { Camera, ImagePlus, LoaderCircle, PenLine } from 'lucide-react'
+import { Calendar, Camera, ImagePlus, LoaderCircle, PenLine } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router'
 import { Banner } from '../../components/ui/Banner'
 import { Button } from '../../components/ui/Button'
 import { Screen } from '../../components/ui/Screen'
 import { Skeleton } from '../../components/ui/Skeleton'
-import { todayIso } from '../../lib/date'
+import { formatDayLabel, parseDateParam, todayIso } from '../../lib/date'
 import { useDay } from '../day/useDay'
 import { compressImage } from './compressImage'
 import { DescribeMealStep } from './DescribeMealStep'
@@ -45,8 +45,11 @@ function parseMealTypeParam(value: string | null): MealType | null {
 export function AddMealPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [searchParams] = useSearchParams()
-  const entryDate = todayIso()
+  const [searchParams, setSearchParams] = useSearchParams()
+  // Seeded from `?date=` so a per-meal CTA or the tab bar's "+" (both built while looking at a
+  // past day) land here already targeting that day — see TodayPage/BottomTabBar. Stays editable
+  // below via the day chip so a wrong day is never a dead end.
+  const [entryDate, setEntryDate] = useState(() => parseDateParam(searchParams.get('date')))
   const { data: day } = useDay(entryDate)
 
   const prefill = (location.state as { prefill?: SuggestionPrefill } | null)?.prefill ?? null
@@ -71,6 +74,27 @@ export function AddMealPage() {
   const analyzePhoto = useAnalyzePhoto()
   const analyzeDescription = useAnalyzeDescription()
   const saveEntries = useSaveFoodEntries()
+
+  /** Where "back"/"after saving" should land: today collapses to the plain `/` it always was, any
+   *  other day keeps `?date=` so TodayPage reopens looking at the same day this entry was added to. */
+  const dayUrl = (date: string) => (date === todayIso() ? '/' : `/?date=${date}`)
+
+  const handleEntryDateChange = (value: string) => {
+    const nextDate = parseDateParam(value)
+    setEntryDate(nextDate)
+    setSearchParams(
+      (previous) => {
+        const next = new URLSearchParams(previous)
+        if (nextDate === todayIso()) {
+          next.delete('date')
+        } else {
+          next.set('date', nextDate)
+        }
+        return next
+      },
+      { replace: true },
+    )
+  }
 
   const resetToChoose = () => {
     setStep('choose')
@@ -194,12 +218,12 @@ export function AddMealPage() {
       }
     })
     await saveEntries.mutateAsync(entries)
-    navigate('/', { replace: true })
+    navigate(dayUrl(entryDate), { replace: true })
   }
 
   const handleSaveManual = async (entry: FoodEntryRequest) => {
     await saveEntries.mutateAsync([entry])
-    navigate('/', { replace: true })
+    navigate(dayUrl(entryDate), { replace: true })
   }
 
   /** A dish was tapped in the Recientes/Favoritos picker — same destination as an analyzed photo:
@@ -228,7 +252,7 @@ export function AddMealPage() {
 
   const handleBack = () => {
     if (step === 'choose') {
-      navigate('/')
+      navigate(dayUrl(entryDate))
       return
     }
     resetToChoose()
@@ -236,6 +260,27 @@ export function AddMealPage() {
 
   return (
     <Screen title={STEP_TITLES[step]} onBack={step === 'analyzing' ? undefined : handleBack}>
+      <div className="mb-4 flex items-center gap-2">
+        <span className="text-sm text-ink-muted">Agregás a</span>
+        <div className="relative inline-flex">
+          <span
+            aria-hidden="true"
+            className="flex h-11 items-center gap-1.5 rounded-full border border-hairline bg-surface px-4 text-sm font-semibold text-ink"
+          >
+            <Calendar className="size-4 text-primary-300" aria-hidden="true" />
+            {formatDayLabel(entryDate)}
+          </span>
+          <input
+            type="date"
+            value={entryDate}
+            max={todayIso()}
+            onChange={(event) => handleEntryDateChange(event.target.value)}
+            aria-label="Cambiar el día en el que estás agregando esta comida"
+            className="absolute inset-0 h-11 w-full cursor-pointer opacity-0"
+          />
+        </div>
+      </div>
+
       {step === 'choose' && (
         <div className="space-y-4">
           {analyzeError && <Banner tone="danger">{analyzeError}</Banner>}
