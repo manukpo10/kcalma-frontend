@@ -130,6 +130,7 @@ const NOTE_TONE: Partial<Record<TargetNoteCode, 'info' | 'warning'>> = {
   RATE_CAPPED: 'warning',
   STRENGTH_TRAINING_RECOMMENDED: 'info',
   KETO_FIBER: 'warning',
+  DEFICIT_NOT_POSSIBLE: 'warning',
 }
 
 /** Banner tone for a target note — defaults to "info" for any code the client doesn't recognize yet. */

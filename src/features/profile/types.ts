@@ -28,6 +28,7 @@ export type TargetNoteCode =
   | 'RATE_CAPPED'
   | 'STRENGTH_TRAINING_RECOMMENDED'
   | 'KETO_FIBER'
+  | 'DEFICIT_NOT_POSSIBLE'
 
 /** Server-authored explanation shown as-is — never re-worded on the client. */
 export interface TargetNote {
