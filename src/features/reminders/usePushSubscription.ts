@@ -8,14 +8,13 @@ async function fetchPublicKey(): Promise<string> {
   return publicKey
 }
 
-/** `navigator.serviceWorker.ready` never resolves if a service worker never actually activates
- *  (e.g. registration silently failed/was blocked) — raced against a short timeout so a caller
- *  that treats unsubscribing as best-effort (sign-out, account deletion) can never hang on it. */
-async function readyRegistrationOrNull(timeoutMs = 3000): Promise<ServiceWorkerRegistration | null> {
-  return Promise.race([
-    navigator.serviceWorker.ready,
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
-  ])
+/** The registration that owns this page's push subscription, if any. Unlike
+ *  `navigator.serviceWorker.ready` (which never settles when no worker ever activates),
+ *  `getRegistration()` resolves right away, so best-effort callers (sign-out, account deletion)
+ *  neither hang nor skip a subscription whose worker simply isn't active yet. */
+async function currentRegistrationOrNull(): Promise<ServiceWorkerRegistration | null> {
+  if (!('serviceWorker' in navigator)) return null
+  return (await navigator.serviceWorker.getRegistration()) ?? null
 }
 
 /**
@@ -62,7 +61,7 @@ export function usePushSubscribe() {
 export function usePushUnsubscribe() {
   return useMutation({
     mutationFn: async () => {
-      const registration = await readyRegistrationOrNull()
+      const registration = await currentRegistrationOrNull()
       if (!registration) return
       const subscription = await registration.pushManager.getSubscription()
       if (!subscription) return
