@@ -100,8 +100,13 @@ function RemindersContent({ data }: RemindersContentProps) {
   const { showToast } = useToast()
   const [permissionError, setPermissionError] = useState<string | null>(null)
 
+  // Master toggle: stays disabled for its whole flow (permission + subscribe/unsubscribe + the
+  // settings PUT below), so a second tap can't overlap one still in flight.
   const busy = updateSettings.isPending || subscribe.isPending || unsubscribe.isPending
-  const subSettingsDisabled = !data.enabled || busy
+  // Sub-settings (meal/water/weigh-in rows): useUpdateReminderSettings now serializes its PUTs
+  // (see its `scope`), so firing another one while an earlier one is still in flight is safe —
+  // only subscribe/unsubscribe need to gate these, not every in-flight settings PUT.
+  const subSettingsDisabled = !data.enabled || subscribe.isPending || unsubscribe.isPending
 
   const persist = (next: ReminderSettings) => updateSettings.mutateAsync(next)
 
