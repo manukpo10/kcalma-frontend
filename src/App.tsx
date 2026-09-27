@@ -14,8 +14,9 @@ import { RequireProfile } from './features/profile/RequireProfile'
 
 // Every route below is reached behind at least one guard/redirect, never the very first paint —
 // lazy-loading them keeps the initial bundle to just "Hoy" + auth/profile plumbing. The
-// sign-up/recovery/privacy screens follow the same rule even though they're public: only someone
-// who isn't logged in yet (or is resetting a password) ever hits them, never the first paint.
+// sign-up/recovery/privacy/welcome screens follow the same rule even though they're public: only
+// someone who isn't logged in yet, is resetting a password, or is accepting an invite ever hits
+// them, never the first paint.
 const ProgressPage = lazy(() => import('./features/progress/ProgressPage').then((m) => ({ default: m.ProgressPage })))
 const AddMealPage = lazy(() => import('./features/food/AddMealPage').then((m) => ({ default: m.AddMealPage })))
 const SuggestMealsPage = lazy(() =>
@@ -31,6 +32,7 @@ const ForgotPasswordPage = lazy(() =>
 const ResetPasswordPage = lazy(() =>
   import('./features/auth/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })),
 )
+const WelcomePage = lazy(() => import('./features/auth/WelcomePage').then((m) => ({ default: m.WelcomePage })))
 const PrivacyPage = lazy(() => import('./features/privacy/PrivacyPage').then((m) => ({ default: m.PrivacyPage })))
 
 export default function App() {
@@ -65,6 +67,14 @@ export default function App() {
           element={
             <Suspense fallback={<LoadingScreen />}>
               <ResetPasswordPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/bienvenida"
+          element={
+            <Suspense fallback={<LoadingScreen />}>
+              <WelcomePage />
             </Suspense>
           }
         />

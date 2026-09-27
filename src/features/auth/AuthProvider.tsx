@@ -7,20 +7,26 @@ import { mapUrlError } from './authErrors'
 interface AuthContextValue {
   session: Session | null
   loading: boolean
-  /** True from the `PASSWORD_RECOVERY` event until `completePasswordRecovery()` runs. A recovery
-   *  link grants a real Supabase session, but the user hasn't set a new password yet — while this
-   *  is true, RequireAuth/LoginPage must treat it as "not signed in" so a recovery link can never
-   *  be used to browse into the app instead of /restablecer. Backed by sessionStorage (not just
-   *  React state) so a page refresh mid-flow doesn't clear the flag and reopen that door. */
+  /** True from the `PASSWORD_RECOVERY` event, or from `requirePasswordSetup()`, until
+   *  `completePasswordRecovery()` runs. A recovery link or an accepted invite both grant a real
+   *  Supabase session before the user has set a password they actually know — while this is true,
+   *  RequireAuth/LoginPage must treat it as "not signed in" so neither link can be used to browse
+   *  into the app instead of /restablecer or /bienvenida. Backed by sessionStorage (not just React
+   *  state) so a page refresh mid-flow doesn't clear the flag and reopen that door. */
   isPasswordRecovery: boolean
   /** Friendly message decoded from a `#error=...` redirect hash (an expired or already-used
    *  confirmation/recovery link) — shown once by LoginPage, then dismissed via
    *  `clearRedirectError`. */
   redirectError: string | null
   clearRedirectError: () => void
-  /** Called by ResetPasswordPage right after `updateUser({ password })` succeeds, so the now
-   *  fully-authenticated session is treated as a normal sign-in from that point on. */
+  /** Called by ResetPasswordPage/WelcomePage right after `updateUser({ password })` succeeds, so
+   *  the now fully-authenticated session is treated as a normal sign-in from that point on. */
   completePasswordRecovery: () => void
+  /** Called by WelcomePage right after `verifyOtp({ type: 'invite' })` succeeds. Supabase emits
+   *  `SIGNED_IN` (not `PASSWORD_RECOVERY`) for an invite token, which would otherwise leave the
+   *  gate above closed — this re-opens it so an invited user still has to set a password before
+   *  RequireAuth lets them past /bienvenida. */
+  requirePasswordSetup: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -113,10 +119,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsPasswordRecovery(false)
     writeRecoveryFlag(false)
   }, [])
+  const requirePasswordSetup = useCallback(() => {
+    setIsPasswordRecovery(true)
+    writeRecoveryFlag(true)
+  }, [])
 
   return (
     <AuthContext.Provider
-      value={{ session, loading, isPasswordRecovery, redirectError, clearRedirectError, completePasswordRecovery }}
+      value={{
+        session,
+        loading,
+        isPasswordRecovery,
+        redirectError,
+        clearRedirectError,
+        completePasswordRecovery,
+        requirePasswordSetup,
+      }}
     >
       {children}
     </AuthContext.Provider>
