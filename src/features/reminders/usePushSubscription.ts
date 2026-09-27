@@ -8,6 +8,16 @@ async function fetchPublicKey(): Promise<string> {
   return publicKey
 }
 
+/** `navigator.serviceWorker.ready` never resolves if a service worker never actually activates
+ *  (e.g. registration silently failed/was blocked) — raced against a short timeout so a caller
+ *  that treats unsubscribing as best-effort (sign-out, account deletion) can never hang on it. */
+async function readyRegistrationOrNull(timeoutMs = 3000): Promise<ServiceWorkerRegistration | null> {
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+  ])
+}
+
 /**
  * Browser-side subscribe: asks the SW for a `PushSubscription` and registers it with the
  * backend. Assumes `Notification.requestPermission()` already resolved to `'granted'` — see
@@ -52,7 +62,8 @@ export function usePushSubscribe() {
 export function usePushUnsubscribe() {
   return useMutation({
     mutationFn: async () => {
-      const registration = await navigator.serviceWorker.ready
+      const registration = await readyRegistrationOrNull()
+      if (!registration) return
       const subscription = await registration.pushManager.getSubscription()
       if (!subscription) return
 
