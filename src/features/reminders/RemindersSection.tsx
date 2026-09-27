@@ -3,11 +3,11 @@ import { useState } from 'react'
 import { Banner } from '../../components/ui/Banner'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
-import { Input } from '../../components/ui/Input'
 import { Switch } from '../../components/ui/Switch'
 import { useToast } from '../../components/ui/ToastProvider'
 import { REMINDER_MEAL_LABELS, REMINDER_MEAL_ORDER } from './labels'
 import { isPushSupported, isStandalonePwa } from './pushSupport'
+import { ReminderTimeInput } from './ReminderTimeInput'
 import { useReminderSettings, useUpdateReminderSettings } from './useReminderSettings'
 import { usePushSubscribe, usePushUnsubscribe } from './usePushSubscription'
 import { useSendTestPush } from './useTestPush'
@@ -209,12 +209,11 @@ function RemindersContent({ data }: RemindersContentProps) {
               label={REMINDER_MEAL_LABELS[meal]}
               className="flex-1"
             />
-            <Input
-              type="time"
+            <ReminderTimeInput
               aria-label={`Hora de ${REMINDER_MEAL_LABELS[meal]}`}
               value={data.meals[meal].time}
               disabled={subSettingsDisabled}
-              onChange={(event) => updateMeal(meal, { time: event.target.value })}
+              onChange={(time) => updateMeal(meal, { time })}
               containerClassName="w-28 shrink-0"
             />
           </div>
@@ -234,20 +233,18 @@ function RemindersContent({ data }: RemindersContentProps) {
             onChange={(everyHours) => updateWater({ everyHours })}
             disabled={subSettingsDisabled || !data.water.enabled}
           />
-          <Input
-            type="time"
+          <ReminderTimeInput
             label="Desde"
             value={data.water.from}
             disabled={subSettingsDisabled || !data.water.enabled}
-            onChange={(event) => updateWater({ from: event.target.value })}
+            onChange={(from) => updateWater({ from })}
             containerClassName="w-28"
           />
-          <Input
-            type="time"
+          <ReminderTimeInput
             label="Hasta"
             value={data.water.to}
             disabled={subSettingsDisabled || !data.water.enabled}
-            onChange={(event) => updateWater({ to: event.target.value })}
+            onChange={(to) => updateWater({ to })}
             containerClassName="w-28"
           />
         </div>
@@ -265,12 +262,11 @@ function RemindersContent({ data }: RemindersContentProps) {
             onChange={(days) => updateWeighIn({ days })}
             disabled={subSettingsDisabled || !data.weighIn.enabled}
           />
-          <Input
-            type="time"
+          <ReminderTimeInput
             aria-label="Hora de control de peso"
             value={data.weighIn.time}
             disabled={subSettingsDisabled || !data.weighIn.enabled}
-            onChange={(event) => updateWeighIn({ time: event.target.value })}
+            onChange={(time) => updateWeighIn({ time })}
             containerClassName="w-28"
           />
         </div>
