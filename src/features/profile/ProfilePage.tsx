@@ -1,4 +1,5 @@
-import { Candy, Droplet, Droplets, Drumstick, Flame, Gauge, LogOut, Pencil, Target, Wheat } from 'lucide-react'
+import { Candy, Download, Droplet, Droplets, Drumstick, Flame, Gauge, LogOut, Pencil, Target, Wheat } from 'lucide-react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Banner } from '../../components/ui/Banner'
 import { BrandMark } from '../../components/ui/BrandMark'
@@ -10,6 +11,7 @@ import { TAB_BAR_CLEARANCE_CLASS } from '../../components/BottomTabBar'
 import { LoadingScreen } from '../../components/LoadingScreen'
 import { formatNumber, formatSignedWeight } from '../../lib/format'
 import { supabase } from '../../lib/supabase'
+import { ExportDataSheet } from './ExportDataSheet'
 import {
   ACTIVITY_LABELS,
   DIETARY_RESTRICTION_LABELS,
@@ -28,6 +30,7 @@ import { useProfile } from './useProfile'
 export function ProfilePage() {
   const navigate = useNavigate()
   const { data, isPending, error } = useProfile()
+  const [exporting, setExporting] = useState(false)
 
   if (isPending) {
     return <LoadingScreen />
@@ -148,6 +151,13 @@ export function ProfilePage() {
           Editar perfil
         </Button>
         <Button
+          variant="secondary"
+          icon={<Download className="size-5" aria-hidden="true" />}
+          onClick={() => setExporting(true)}
+        >
+          Exportar mis datos
+        </Button>
+        <Button
           variant="ghost"
           icon={<LogOut className="size-5" aria-hidden="true" />}
           onClick={() => void supabase.auth.signOut()}
@@ -159,6 +169,8 @@ export function ProfilePage() {
       <p className="mt-6 text-center text-xs text-ink-muted">Datos nutricionales: USDA FoodData Central</p>
 
       <div aria-hidden="true" className={TAB_BAR_CLEARANCE_CLASS} />
+
+      {exporting && <ExportDataSheet onClose={() => setExporting(false)} />}
     </Screen>
   )
 }

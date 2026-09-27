@@ -66,18 +66,54 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   const response = await rawFetch(path, init)
 
   if (response.status === 401) {
-    const { data, error } = await supabase.auth.refreshSession()
-    if (!error && data.session) {
-      const retried = await rawFetch(path, init)
-      if (retried.status !== 401) {
-        return handleResponse<T>(retried)
-      }
-    }
-    await supabase.auth.signOut()
-    throw new Error('La sesión expiró. Iniciar sesión nuevamente.')
+    return handleResponse<T>(await retryAfterRefresh(path, init))
   }
 
   return handleResponse<T>(response)
+}
+
+/** Shared by `apiFetch`/`apiFetchBlob`: the access token may have simply expired, so try one
+ *  silent `refreshSession()` and retry the request with the new token before giving up. Only
+ *  signs out if that retry also fails. Returns the response for the caller to finish handling
+ *  (JSON body vs. blob differ from here on, which is why this doesn't call `handleResponse` itself). */
+async function retryAfterRefresh(path: string, init: RequestInit): Promise<Response> {
+  const { data, error } = await supabase.auth.refreshSession()
+  if (!error && data.session) {
+    const retried = await rawFetch(path, init)
+    if (retried.status !== 401) {
+      return retried
+    }
+  }
+  await supabase.auth.signOut()
+  throw new Error('La sesión expiró. Iniciar sesión nuevamente.')
+}
+
+/** Filename from a `Content-Disposition` header (`filename*=UTF-8''...` preferred, falling back
+ *  to plain `filename="..."`) — used by `apiFetchBlob` since the browser doesn't parse this itself
+ *  for a fetch()ed response the way it would for a plain navigation/download. */
+function filenameFromContentDisposition(header: string | null): string | null {
+  if (!header) return null
+  const encodedMatch = /filename\*=UTF-8''([^;]+)/i.exec(header)
+  if (encodedMatch) return decodeURIComponent(encodedMatch[1])
+  const plainMatch = /filename="?([^";]+)"?/i.exec(header)
+  return plainMatch ? plainMatch[1] : null
+}
+
+/**
+ * Same auth/retry contract as `apiFetch`, but for a binary response (the data export) — returns
+ * the raw `Blob` plus the filename from `Content-Disposition` instead of parsing JSON.
+ */
+export async function apiFetchBlob(path: string, init: RequestInit = {}): Promise<{ blob: Blob; filename: string }> {
+  const response = await rawFetch(path, init)
+  const resolved = response.status === 401 ? await retryAfterRefresh(path, init) : response
+
+  if (resolved.status === 403) throw new ApiForbiddenError()
+  if (resolved.status === 404) throw new ApiNotFoundError()
+  if (!resolved.ok) throw new Error(await friendlyErrorMessage(resolved))
+
+  const blob = await resolved.blob()
+  const filename = filenameFromContentDisposition(resolved.headers.get('Content-Disposition')) ?? 'kcalma-export'
+  return { blob, filename }
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
