@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router'
 import { AppShell } from './components/AppShell'
 import { LoadingScreen } from './components/LoadingScreen'
 import { OfflineBanner } from './components/OfflineBanner'
+import { ServiceWorkerNavigationListener } from './components/ServiceWorkerNavigationListener'
 import { UpdatePrompt } from './components/UpdatePrompt'
 import { ToastProvider } from './components/ui/ToastProvider'
 import { LoginPage } from './features/auth/LoginPage'
@@ -25,9 +26,12 @@ const OnboardingPage = lazy(() =>
 export default function App() {
   return (
     <ToastProvider>
-      {/* Outside every auth guard below so the update toast/offline banner also work on /login. */}
+      {/* Outside every auth guard below so the update toast/offline banner also work on /login,
+          and outside <Routes> entirely so the SW navigation bridge is active for every route,
+          including /agregar (its own top-level <Route> further down). */}
       <UpdatePrompt />
       <OfflineBanner />
+      <ServiceWorkerNavigationListener />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route
