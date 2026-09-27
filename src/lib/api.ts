@@ -133,7 +133,10 @@ async function handleResponse<T>(response: Response): Promise<T> {
     return undefined as T
   }
 
-  return (await response.json()) as T
+  // Some 2xx responses (e.g. POST /api/push/subscriptions' 201) carry no body at all — `.json()`
+  // on an empty string throws a SyntaxError, so parse manually and only when there's something there.
+  const text = await response.text()
+  return (text ? JSON.parse(text) : undefined) as T
 }
 
 /** Backend errors (e.g. the Gemini-analysis 502, or a 429 rate limit) carry a Spanish

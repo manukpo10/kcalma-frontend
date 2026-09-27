@@ -1,5 +1,5 @@
 import { Candy, Download, Droplet, Droplets, Drumstick, Flame, Gauge, LogOut, Pencil, Target, Wheat } from 'lucide-react'
-import { useState } from 'react'
+import { Suspense, lazy, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Banner } from '../../components/ui/Banner'
 import { BrandMark } from '../../components/ui/BrandMark'
@@ -26,6 +26,12 @@ import {
   proteinBasisMessage,
 } from './labels'
 import { useProfile } from './useProfile'
+
+// Own hooks/icons/query stay out of the main bundle for everyone who never opens this section —
+// see RemindersSection's own doc comment for why it's also gated behind standalone-PWA detection.
+const RemindersSection = lazy(() =>
+  import('../reminders/RemindersSection').then((m) => ({ default: m.RemindersSection })),
+)
 
 /** Profile summary + daily targets (read-only reference) + edit profile + log out. */
 export function ProfilePage() {
@@ -148,7 +154,11 @@ export function ProfilePage() {
         </div>
       </Card>
 
-      <div className="space-y-3">
+      <Suspense fallback={null}>
+        <RemindersSection />
+      </Suspense>
+
+      <div className="mt-5 space-y-3">
         <Button
           variant="secondary"
           icon={<Pencil className="size-5" aria-hidden="true" />}
