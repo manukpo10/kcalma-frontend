@@ -11,6 +11,7 @@ import { useToast } from '../../components/ui/ToastProvider'
 import { TAB_BAR_CLEARANCE_CLASS } from '../../components/BottomTabBar'
 import { addDays, formatDayLabel, todayIso } from '../../lib/date'
 import { formatNumber } from '../../lib/format'
+import { CheckinCard } from '../checkin/CheckinCard'
 import { MEAL_TYPE_LABELS, MEAL_TYPE_ORDER } from '../food/labels'
 import type { FoodEntry, MealType } from '../food/types'
 import { useCopyMeal, useDeleteMeal } from '../food/useFoodEntries'
@@ -138,6 +139,8 @@ export function TodayPage() {
           <ChevronRight className="size-5" aria-hidden="true" />
         </button>
       </div>
+
+      {isToday && <CheckinCard />}
 
       {error && <Banner tone="danger">{error instanceof Error ? error.message : 'Error al cargar el día.'}</Banner>}
 
