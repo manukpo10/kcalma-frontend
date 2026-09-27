@@ -19,6 +19,10 @@ export type DietaryRestriction = 'VEGETARIAN' | 'VEGAN' | 'GLUTEN_FREE' | 'LACTO
 /** What the protein target is calculated on. */
 export type ProteinBasis = 'LEAN_MASS' | 'ADJUSTED_WEIGHT' | 'BODY_WEIGHT'
 
+/** Where today's calorie target comes from: the Mifflin-St Jeor formula, or a weekly check-in
+ *  that has been accepted at least once. */
+export type EnergySource = 'FORMULA' | 'ADAPTIVE'
+
 export type TargetNoteCode =
   | 'FLOOR_APPLIED'
   | 'RATE_CAPPED'
@@ -70,6 +74,11 @@ export interface NutritionTargetsResponse {
   /** Only present once body-fat % has been recorded. */
   leanMassKg: number | null
   notes: TargetNote[]
+  /** Sprint 3a — both optional so targets keep working against a backend that doesn't send them
+   *  yet. `adaptiveSince` (the date the first accepted check-in took effect) is only meaningful
+   *  when `energySource` is ADAPTIVE. */
+  energySource?: EnergySource
+  adaptiveSince?: string | null
 }
 
 export interface ProfileWithTargets {

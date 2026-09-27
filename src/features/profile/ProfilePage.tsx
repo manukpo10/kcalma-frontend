@@ -20,6 +20,7 @@ import {
   PACE_LABELS,
   SEX_LABELS,
   dailyAdjustmentMessage,
+  energySourceMessage,
   needsPace,
   noteTone,
   proteinBasisMessage,
@@ -58,6 +59,7 @@ export function ProfilePage() {
     planParts.push(profile.dietaryRestrictions.map((restriction) => DIETARY_RESTRICTION_LABELS[restriction]).join(', '))
   }
   const notes = targets.notes ?? []
+  const energySource = energySourceMessage(targets.energySource, targets.adaptiveSince)
 
   return (
     <Screen title="Perfil" icon={<BrandMark size="sm" className="mr-1" />}>
@@ -85,9 +87,13 @@ export function ProfilePage() {
           <Flame className="size-4" aria-hidden="true" />
           Objetivos diarios
         </p>
-        <p className="mb-4 text-3xl font-bold text-ink">
+        <p className="mb-1 text-3xl font-bold text-ink">
           {formatNumber(targets.calories)} <span className="text-base font-medium text-ink-muted">kcal</span>
         </p>
+        <div className="mb-4">
+          <p className="text-xs text-ink-muted">{energySource.primary}</p>
+          {energySource.hint && <p className="mt-0.5 text-xs text-ink-muted/70">{energySource.hint}</p>}
+        </div>
 
         <div className="mb-3 grid grid-cols-3 gap-3">
           <StatTile

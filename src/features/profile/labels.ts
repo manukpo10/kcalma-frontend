@@ -1,8 +1,10 @@
+import { formatLongDate } from '../../lib/date'
 import { formatNumber } from '../../lib/format'
 import type {
   ActivityLevel,
   DietaryRestriction,
   DietStyle,
+  EnergySource,
   Goal,
   Pace,
   ProteinBasis,
@@ -133,4 +135,29 @@ const NOTE_TONE: Partial<Record<TargetNoteCode, 'info' | 'warning'>> = {
 /** Banner tone for a target note — defaults to "info" for any code the client doesn't recognize yet. */
 export function noteTone(code: TargetNoteCode): 'info' | 'warning' {
   return NOTE_TONE[code] ?? 'info'
+}
+
+export interface EnergySourceMessage {
+  primary: string
+  /** Only set for the FORMULA case — once adaptive, there's nothing left to hint at. */
+  hint?: string
+}
+
+/**
+ * "Calorías ajustadas con tus datos reales desde {fecha}" once a check-in has been accepted, or
+ * the formula copy plus a hint that logging will personalize it later. `energySource` is optional
+ * on the wire (Sprint 3a) — anything other than ADAPTIVE (including a backend that omits the
+ * field entirely) reads as the formula case.
+ */
+export function energySourceMessage(
+  energySource: EnergySource | undefined,
+  adaptiveSince: string | null | undefined,
+): EnergySourceMessage {
+  if (energySource === 'ADAPTIVE' && adaptiveSince) {
+    return { primary: `Calorías ajustadas con tus datos reales desde ${formatLongDate(adaptiveSince)}` }
+  }
+  return {
+    primary: 'Calorías estimadas con fórmula (Mifflin-St Jeor)',
+    hint: 'Los chequeos semanales las van a personalizar con datos reales después de 2 a 3 semanas registrando comidas y peso.',
+  }
 }
