@@ -35,8 +35,9 @@ import { ProgressBar } from '../../components/ui/ProgressBar'
 import { Screen } from '../../components/ui/Screen'
 import { SegmentedControl } from '../../components/ui/SegmentedControl'
 import { SelectableCard } from '../../components/ui/SelectableCard'
+import { ApiValidationError } from '../../lib/api'
 import { cn } from '../../lib/cn'
-import { todayIso } from '../../lib/date'
+import { isoYearsAgo, todayIso } from '../../lib/date'
 import { formatSignedWeight } from '../../lib/format'
 import {
   ACTIVITY_LABELS,
@@ -224,6 +225,20 @@ export function OnboardingPage() {
 
   const isLastStep = step === steps.length - 1
 
+  // Submit only ever runs from the last step, so a field error the backend finds on an earlier
+  // one (e.g. birthDate failing its own 18-100 check) would otherwise land somewhere the user
+  // can't see it — jump back to that step so `birthDateServerError` below renders it.
+  const submitAndRecoverStep = async () => {
+    try {
+      await handleSubmit(onSubmit)()
+    } catch (error) {
+      if (error instanceof ApiValidationError && error.fieldErrors.birthDate) {
+        const birthDateStep = steps.findIndex((item) => item.field === 'birthDate')
+        if (birthDateStep >= 0) setStep(birthDateStep)
+      }
+    }
+  }
+
   const handleNext = async () => {
     const fieldsToValidate = STEP_VALIDATION_FIELDS[steps[step].field] ?? steps[step].field
     const valid = await trigger(fieldsToValidate)
@@ -234,12 +249,12 @@ export function OnboardingPage() {
       return
     }
 
-    await handleSubmit(onSubmit)()
+    await submitAndRecoverStep()
   }
 
   const handleSkipBodyFat = async () => {
     setValue('bodyFatPct', '', { shouldValidate: true })
-    await handleSubmit(onSubmit)()
+    await submitAndRecoverStep()
   }
 
   const handleBack = () => {
@@ -256,6 +271,10 @@ export function OnboardingPage() {
   const StepIcon = current.icon
   const currentWeightKg = Number(watch('weightKg')) || 0
   const restrictions = watch('dietaryRestrictions')
+  // Only meaningful right after a failed submit, and only while it names this field — see the
+  // catch block in `handleNext` that jumps back to this step so the message is actually visible.
+  const birthDateServerError =
+    updateProfile.error instanceof ApiValidationError ? updateProfile.error.fieldErrors.birthDate : undefined
 
   return (
     <Screen
@@ -297,8 +316,9 @@ export function OnboardingPage() {
             <Input
               label="Fecha de nacimiento"
               type="date"
-              max={new Date().toISOString().slice(0, 10)}
-              error={errors.birthDate?.message}
+              min={isoYearsAgo(100)}
+              max={isoYearsAgo(18)}
+              error={errors.birthDate?.message ?? birthDateServerError}
               {...register('birthDate')}
             />
           )}
@@ -368,9 +388,15 @@ export function OnboardingPage() {
                   selected={watch('pace') === pace}
                   onSelect={() => setValue('pace', pace, { shouldValidate: true })}
                   title={PACE_LABELS[pace]}
-                  description={`${formatSignedWeight(paceWeeklyRateKg(goal, pace, currentWeightKg))} kg/semana`}
+                  description={`Hasta ${formatSignedWeight(paceWeeklyRateKg(goal, pace, currentWeightKg))} kg/semana`}
                 />
               ))}
+              {/* This is a preview only — the real target (calculated server-side) caps the deficit
+                  at 25% of your gasto energético and may skip it for a small body weight, so the
+                  actual rate can end up more conservative than what's shown above. */}
+              <p className="mt-1 text-xs text-ink-muted">
+                Es un máximo orientativo: por tu seguridad, Kcalma puede ajustarlo según tu peso y tu gasto energético.
+              </p>
               {errors.pace && (
                 <p role="alert" className="mt-2 text-sm text-danger">
                   {errors.pace.message}
