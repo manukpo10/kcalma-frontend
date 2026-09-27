@@ -13,7 +13,9 @@ import { ProfilePage } from './features/profile/ProfilePage'
 import { RequireProfile } from './features/profile/RequireProfile'
 
 // Every route below is reached behind at least one guard/redirect, never the very first paint —
-// lazy-loading them keeps the initial bundle to just "Hoy" + auth/profile plumbing.
+// lazy-loading them keeps the initial bundle to just "Hoy" + auth/profile plumbing. The
+// sign-up/recovery/privacy screens follow the same rule even though they're public: only someone
+// who isn't logged in yet (or is resetting a password) ever hits them, never the first paint.
 const ProgressPage = lazy(() => import('./features/progress/ProgressPage').then((m) => ({ default: m.ProgressPage })))
 const AddMealPage = lazy(() => import('./features/food/AddMealPage').then((m) => ({ default: m.AddMealPage })))
 const SuggestMealsPage = lazy(() =>
@@ -22,6 +24,14 @@ const SuggestMealsPage = lazy(() =>
 const OnboardingPage = lazy(() =>
   import('./features/profile/OnboardingPage').then((m) => ({ default: m.OnboardingPage })),
 )
+const SignUpPage = lazy(() => import('./features/auth/SignUpPage').then((m) => ({ default: m.SignUpPage })))
+const ForgotPasswordPage = lazy(() =>
+  import('./features/auth/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })),
+)
+const ResetPasswordPage = lazy(() =>
+  import('./features/auth/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })),
+)
+const PrivacyPage = lazy(() => import('./features/privacy/PrivacyPage').then((m) => ({ default: m.PrivacyPage })))
 
 export default function App() {
   return (
@@ -34,6 +44,38 @@ export default function App() {
       <ServiceWorkerNavigationListener />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/registro"
+          element={
+            <Suspense fallback={<LoadingScreen />}>
+              <SignUpPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/recuperar"
+          element={
+            <Suspense fallback={<LoadingScreen />}>
+              <ForgotPasswordPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/restablecer"
+          element={
+            <Suspense fallback={<LoadingScreen />}>
+              <ResetPasswordPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/privacidad"
+          element={
+            <Suspense fallback={<LoadingScreen />}>
+              <PrivacyPage />
+            </Suspense>
+          }
+        />
         <Route
           path="/onboarding"
           element={
