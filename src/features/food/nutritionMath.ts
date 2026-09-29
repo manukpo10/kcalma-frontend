@@ -28,6 +28,26 @@ export function computeTotals(per100: Per100, grams: number): Totals {
   }
 }
 
+/**
+ * Same idea as `computeTotals`, but leaves protein/fat/carbs unrounded — used for the compact
+ * per-ingredient macro chips (`IngredientsSection`), which show one decimal below 10 g instead of
+ * rounding small amounts away to 0 (see `formatMacroGrams`). kcal still rounds like everywhere
+ * else. Never used for the dish header/totals — those keep summing `computeTotals`'s rounded
+ * per-ingredient values, unchanged.
+ */
+export function computeIngredientMacros(
+  per100: Per100,
+  grams: number,
+): { kcal: number; protein: number; fat: number; carbs: number } {
+  const factor = grams / 100
+  return {
+    kcal: Math.round(per100.kcalPer100 * factor),
+    protein: per100.proteinPer100 * factor,
+    fat: per100.fatPer100 * factor,
+    carbs: per100.carbsPer100 * factor,
+  }
+}
+
 export const ZERO_TOTALS: Totals = { kcal: 0, protein: 0, fat: 0, carbs: 0, fiber: 0, sugar: 0, sodiumMg: 0 }
 
 export function sumTotals(items: Totals[]): Totals {

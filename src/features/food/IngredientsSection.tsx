@@ -1,10 +1,11 @@
 import { ChevronDown, X } from 'lucide-react'
 import { useState } from 'react'
+import { MacroChips } from '../../components/ui/MacroChips'
 import { SourceBadge } from '../../components/ui/SourceBadge'
 import { cn } from '../../lib/cn'
 import { formatNumber } from '../../lib/format'
 import { GramsStepper } from './GramsStepper'
-import { computeTotals } from './nutritionMath'
+import { computeIngredientMacros } from './nutritionMath'
 import type { DraftIngredient } from './types'
 
 interface IngredientsSectionProps {
@@ -13,10 +14,19 @@ interface IngredientsSectionProps {
   onRemove: (key: string) => void
 }
 
+/** An ingredient carries macros unless it's a pre-breakdown legacy value that slipped through
+ *  without them (per100 fields are optional at runtime despite the stricter compile-time type) —
+ *  in that case the row falls back to kcal-only, same as before this feature existed. */
+function hasMacros(ingredient: DraftIngredient): boolean {
+  return [ingredient.proteinPer100, ingredient.fatPer100, ingredient.carbsPer100].every(
+    (value) => typeof value === 'number' && Number.isFinite(value),
+  )
+}
+
 /**
  * Collapsible "Ingredientes (N)" breakdown reused by both the review step (before saving) and
  * `EditEntryModal` (a saved entry): collapsed by default, a 44px toggle, and each ingredient's own
- * name/source/grams/kcal/remove — same shape, only the surrounding save action differs. A
+ * name/source/grams/kcal+macros/remove — same shape, only the surrounding save action differs. A
  * single-ingredient dish (a simple food) has nothing to break down, so this renders nothing.
  */
 export function IngredientsSection({ ingredients, onChangeGrams, onRemove }: IngredientsSectionProps) {
@@ -42,7 +52,8 @@ export function IngredientsSection({ ingredients, onChangeGrams, onRemove }: Ing
         <div className="overflow-hidden">
           <div className="space-y-2 pb-1">
             {ingredients.map((ingredient) => {
-              const kcal = computeTotals(ingredient, ingredient.grams).kcal
+              const macros = computeIngredientMacros(ingredient, ingredient.grams)
+              const showMacros = hasMacros(ingredient)
               return (
                 <div key={ingredient.key} className="space-y-2 rounded-lg bg-surface-2 p-2.5">
                   <div className="flex items-center justify-between gap-2">
@@ -60,8 +71,16 @@ export function IngredientsSection({ ingredients, onChangeGrams, onRemove }: Ing
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <GramsStepper value={ingredient.grams} step={5} onChange={(grams) => onChangeGrams(ingredient.key, grams)} />
-                    <span className="shrink-0 text-sm font-semibold text-ink">{formatNumber(kcal)} kcal</span>
+                    {/* No breakdown on this legacy ingredient: kcal-only, same spot as before. */}
+                    {!showMacros && (
+                      <span className="shrink-0 text-sm font-semibold text-ink">{formatNumber(macros.kcal)} kcal</span>
+                    )}
                   </div>
+                  {/* Own row below the stepper so 4 chips don't squeeze a 375px screen. Kcal moves
+                      in here (same chip style as the dish header) instead of duplicating it above. */}
+                  {showMacros && (
+                    <MacroChips size="sm" kcal={macros.kcal} protein={macros.protein} fat={macros.fat} carbs={macros.carbs} />
+                  )}
                 </div>
               )
             })}

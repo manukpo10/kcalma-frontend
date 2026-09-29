@@ -18,6 +18,13 @@ export function formatWeight(value: number): string {
   return weightFormatter.format(value)
 }
 
+/** Ingredient-level macro grams: whole numbers from 10 g up, one decimal below (e.g. "0,4 g") —
+ *  a dab of mayo or a drizzle of oil would otherwise round away to "0 g". Only for the compact
+ *  per-ingredient `MacroChips` (`size="sm"`); the dish header keeps whole-gram formatting. */
+export function formatMacroGrams(value: number): string {
+  return Math.abs(value) >= 10 ? formatNumber(Math.round(value)) : formatWeight(value)
+}
+
 /** Same as {@link formatWeight} but always shows a leading sign (e.g. "+0,6" / "-1,4" / "0,0"). */
 export function formatSignedWeight(value: number): string {
   return signedWeightFormatter.format(value)
